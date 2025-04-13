@@ -53,7 +53,7 @@ base_costs = {
 from PIL import Image
 
 # Load and display custom logo
-logo = Image.open("logo.png")
+logo = Image.open("blk-MAIN.png")
 st.image(logo, width=200)
 
 st.set_page_config(page_title="Wedding Budget Estimator", layout="centered")
