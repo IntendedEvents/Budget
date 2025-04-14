@@ -6,12 +6,12 @@ import os
 import plotly.express as px
 
 # --- Streamlit Config ---
-st.set_page_config(page_title="Wedding Budget Estimator", layout="centered")
+st.set_page_config(page_title="Vancouver Island Wedding Budget Estimator", layout="centered")
 if os.path.exists("blk-MAIN.png"):
     logo = Image.open("blk-MAIN.png")
     st.image(logo, width=200)
 
-st.title("💍 Wedding Budget Estimator")
+st.title("💍 Vancouver Island Wedding Budget Estimator")
 
 st.info("""
 This tool is meant to help you **start the conversation** around your wedding budget — not to be a precise quote.
@@ -170,20 +170,20 @@ for tier, weights in priority_weights.items():
         value = (g * w[0] + b * w[1] + bst * w[2]) * scaling_factor
 
         if cat == "Decor & Rentals (Furniture, decor, tent, etc.)" and tent_needed:
-    sqft = guest_count * 12.5
-    if sqft <= 800:
-        base_tent_cost = 2500
-    elif sqft <= 1500:
-        base_tent_cost = 5000
-    elif sqft <= 2500:
-        base_tent_cost = 6500
-    else:
-        base_tent_cost = 8000
+            sqft = guest_count * 12.5
+            if sqft <= 800:
+                base_tent_cost = 2500
+            elif sqft <= 1500:
+                base_tent_cost = 5000
+            elif sqft <= 2500:
+                base_tent_cost = 6500
+            else:
+                base_tent_cost = 8000
 
-    if category_priorities[cat] == "top":
-        base_tent_cost += 3000
+            if category_priorities[cat] == "top":
+                base_tent_cost += 3000
 
-    value += base_tent_cost
+            value += base_tent_cost
         if cat == "Hair & Makeup":
             value += (marrier_hair + wp_hair + marrier_makeup + wp_makeup) * 100
         if cat == "Wedding Attire":
