@@ -30,10 +30,11 @@ st.info("""
 # --- Input layout using columns ---
 col1, col2 = st.columns(2)
 with col1:
+    venue_type = st.radio("What type of venue are you considering?", [
     "Private Property",
     "Standard Venue",
     "Luxury/Hotel Venue"
-    ])
+])
 with col2:
     floral_tier = st.radio("What best describes your floral vision?", [
         "Minimal", "Moderate", "Lush"
