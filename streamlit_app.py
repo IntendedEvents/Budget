@@ -211,8 +211,7 @@ for tier in ["Essential", "Enhanced", "Elevated"]:
         mime='text/csv'
     )
 
-st.markdown("
-💾 *Take a screenshot or print this page to save your budget breakdowns.*")
+st.markdown("💾 *Take a screenshot or print this page to save your budget breakdowns.*")
 
 st.markdown("""
 ## What’s Next?
@@ -227,5 +226,3 @@ We’re cheering you on from here 💛
 📬 [Contact Us](https://intendedevents.ca/pages/contact-us)  
 📸 [Follow on Instagram](https://instagram.com/intendedevents)
 """)
-
-
