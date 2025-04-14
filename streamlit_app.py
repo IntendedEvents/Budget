@@ -180,7 +180,7 @@ if tier == "Elevated":
 
 ## What’s Next?
 
-If this feels like a helpful starting point — amazing!  
+If this feels like a helpful starting point, amazing!  
 Take your results and review them with your wedding planner or someone with experience navigating local vendors and venues.
 
 If you’re planning a **Vancouver Island wedding**, this tool was created with *you* in mind — whether you're dreaming of forest elopements, coastal celebrations, or backyard parties with your people.
