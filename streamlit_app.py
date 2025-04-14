@@ -13,7 +13,15 @@ if os.path.exists("blk-MAIN.png"):
 
 st.title("💍 Wedding Budget Estimator")
 
-# --- Categories ---
+st.info("""
+This tool is meant to help you **start the conversation** around your wedding budget — not to be a precise quote.
+
+It uses estimated ranges based on real weddings and vendor averages across Vancouver Island, but actual prices may vary depending on season, style, and location.
+
+Take this as your planning launchpad, not your final spreadsheet 💫
+""")
+
+# --- Categories and Base Costs ---
 categories = [
     "Officiant",
     "Ceremony Decor, Rentals, and AV",
@@ -36,7 +44,6 @@ categories = [
     "Other (Signage, Stationery, Gifts, Favours, etc.)"
 ]
 
-# Base costs: [Good, Better, Best]
 base_costs = {
     "Officiant": [400, 600, 1000],
     "Ceremony Decor, Rentals, and AV": [1200, 3000, 6000],
@@ -59,7 +66,7 @@ base_costs = {
     "Other (Signage, Stationery, Gifts, Favours, etc.)": [1000, 2000, 4000]
 }
 
-# --- Experience goals and mappings ---
+# --- Experience Goals & Mapping ---
 goals = {
     "🌿 A Beautiful Atmosphere": "Creating a visually stunning space with decor, florals, and lighting",
     "💍 A Meaningful Ceremony": "Prioritizing the emotional heart of your day — your vows and the setting",
@@ -73,7 +80,6 @@ goals = {
     "✨ A Unique and Personalized Experience": "Touches that tell your story, from signage to stationery"
 }
 
-# Map each category to one or more goals
 category_to_goals = {
     "Officiant": ["💍 A Meaningful Ceremony"],
     "Ceremony Decor, Rentals, and AV": ["🌿 A Beautiful Atmosphere", "💍 A Meaningful Ceremony"],
@@ -97,7 +103,6 @@ category_to_goals = {
 }
 
 # --- Inputs ---
-
 st.markdown("Enter your wedding details below. We'll calculate three budget levels based on your unique priorities!")
 
 guest_count = st.number_input("Guest Count", min_value=1, value=100)
@@ -110,82 +115,117 @@ wp_makeup = st.number_input("Wedding party makeup services you're covering", min
 
 st.markdown("---")
 st.subheader("Step 2: Select Your Experience Priorities")
+for icon_title, desc in goals.items():
+    st.markdown(f"**{icon_title}** — {desc}")
 
-top_3 = st.multiselect("Top 3 Priorities", [f"{k}: {v}" for k, v in goals.items()], max_selections=3)
-lowest = st.multiselect("Optional: Do Not Prioritize", [f"{k}: {v}" for k, v in goals.items() if k not in [g.split(":")[0] for g in top_3]])
+top_3 = st.multiselect("Top 3 Priorities", list(goals.keys()), max_selections=3)
+lowest = st.multiselect("Optional: Do Not Prioritize", [g for g in goals if g not in top_3])
 
-# Extract goal keys only
-top_keys = [g.split(":")[0] for g in top_3]
-low_keys = [g.split(":")[0] for g in lowest]
-
-# Advanced customization toggle
-use_custom = st.checkbox("🎛️ Advanced Customization: Choose exactly what to include in your budget")
+st.markdown("---")
+use_custom = st.checkbox("🎛️ Advanced Customization: I only want to include specific elements in my budget (click ❌ to remove anything you’re not including)")
 included_categories = categories.copy()
 if use_custom:
-    included_categories = st.multiselect("Which of the following are you including in your budget?", categories, default=categories)
+    included_categories = st.multiselect("Included Budget Categories", categories, default=categories)
 
-# Priority mapping
-def get_priority(cat):
-    cat_goals = category_to_goals.get(cat, [])
-    if any(g in top_keys for g in cat_goals):
-        return "top"
-    if any(g in low_keys for g in cat_goals):
-        return "bottom"
-    return "mid"
-
-# Priority logic
+# --- Budget Calculation ---
 priority_weights = {
     "Essential": {"top": [0.6, 0.4, 0.0], "mid": [0.8, 0.2, 0.0], "bottom": [1.0, 0.0, 0.0]},
     "Enhanced": {"top": [0.3, 0.7, 0.0], "mid": [0.0, 0.5, 0.5], "bottom": [0.8, 0.2, 0.0]},
     "Elevated": {"top": [0.0, 0.1, 0.9], "mid": [0.0, 0.2, 0.8], "bottom": [0.5, 0.5, 0.0]}
 }
 
-# Budget calculation
 scaling_factor = guest_count / 100
-budget_tiers = {"Essential": {}, "Enhanced": {}, "Elevated": {}}
+budget_tiers = {tier: {} for tier in priority_weights}
 tier_totals = {}
+category_priorities = {}
 
-for tier in budget_tiers:
+for cat in categories:
+    goals_for_cat = category_to_goals.get(cat, [])
+    if any(g in top_3 for g in goals_for_cat):
+        category_priorities[cat] = "top"
+    elif any(g in lowest for g in goals_for_cat):
+        category_priorities[cat] = "bottom"
+    else:
+        category_priorities[cat] = "mid"
+
+for tier, weights in priority_weights.items():
     total = 0
+    goal_spend = {goal: 0 for goal in goals}
     for cat in categories:
         if cat not in included_categories:
             budget_tiers[tier][cat] = 0
             continue
-
         g, b, bst = base_costs[cat]
-        w = priority_weights[tier][get_priority(cat)]
+        w = weights[category_priorities[cat]]
         value = (g * w[0] + b * w[1] + bst * w[2]) * scaling_factor
-
         if cat == "Hair & Makeup":
             value += (marrier_hair + wp_hair + marrier_makeup + wp_makeup) * 100
         if cat == "Wedding Attire":
             value += dresses * 250 + suits * 200
-
         value = round(value)
         budget_tiers[tier][cat] = value
         total += value
-
+        for goal in category_to_goals.get(cat, []):
+            goal_spend[goal] += value
     tier_totals[tier] = total
+    budget_tiers[tier]["_goal_spend"] = goal_spend
 
-# Output
+# --- Output ---
 st.markdown("---")
 st.header("Estimated Budgets")
 for tier in ["Essential", "Enhanced", "Elevated"]:
     st.subheader(f"{tier} Budget")
     st.write(f"Total: ${tier_totals[tier]:,} | Per Guest: ${tier_totals[tier] // guest_count:,}/guest")
     df = pd.DataFrame.from_dict(budget_tiers[tier], orient='index', columns=['Amount'])
-    st.dataframe(df.style.format("${:,.0f}"))
-    chart = px.pie(df[df["Amount"] > 0].reset_index(), names='index', values='Amount', title=f"{tier} Budget Breakdown")
+    df = df.drop("_goal_spend")
+    styled = df.style.format("${:,.0f}")
+    for cat in df.index:
+        if cat not in included_categories:
+            styled = styled.set_properties(subset=[cat], **{'color': 'grey'})
+    st.dataframe(styled)
+    chart = px.pie(
+        df[df["Amount"] > 0].reset_index(),
+        names='index',
+        values='Amount',
+        title=f"{tier} Budget Breakdown",
+        color_discrete_sequence=[
+            "#2e504c", "#c8a566", "#9bb7be", "#dad0af", "#477485", "#dee5e3", "#ffffff"
+        ]
+    )
     st.plotly_chart(chart)
+    st.subheader(f"{tier} Budget by Experience Goal")
+    goal_breakdown = budget_tiers[tier]["_goal_spend"]
+    goal_df = pd.DataFrame.from_dict(goal_breakdown, orient='index', columns=['Amount'])
+    goal_df = goal_df[goal_df['Amount'] > 
+    goal_df['Percent'] = (goal_df['Amount'] / tier_totals[tier]) * 100
+    st.dataframe(goal_df.style.format({"Amount": "${:,.0f}", "Percnt": "{:.1f}%"}))
     summary = f"{tier} Wedding Budget Estimate\nTotal: ${tier_totals[tier]:,}\nPer Guest: ${tier_totals[tier] // guest_count:,}\n\nBreakdown:\n" + \
-              "\n".join([f"{k}: ${v:,}" for k, v in budget_tiers[tier].items()])
+              "\n".join([f"{k}: ${v:,}" for k, v in df.to_dict()['Amount'].items()])
     st.text_area(f"{tier} Summary:", summary, height=300)
 
-# Experience Goal Key
-st.markdown("---")
-st.subheader("Experience Goal Key")
-for icon_title, desc in goals.items():
-    st.markdown(f"**{icon_title}** — {desc}")
+    csv = df.to_csv().encode('utf-8')
+    st.download_button(
+        label=f"⬇️ Download {tier} Budget as CSV",
+        data=csv,
+        file_name=f'{tier.lower()}_budget.csv',
+        mime='text/csv'
+    )
 
-st.markdown("\n💾 *Take a screenshot or print this page to save your budget breakdowns.*")
+st.markdown("
+💾 *Take a screenshot or print this page to save your budget breakdowns.*")
+
+st.markdown("""
+## What’s Next?
+
+If this feels like a helpful starting point — amazing!  
+Take your results and review them with your wedding planner or someone with experience navigating local vendors and venues.
+
+If you’re planning a **Vancouver Island wedding**, this tool was created with *you* in mind — whether you're dreaming of forest elopements, coastal celebrations, or backyard parties with your people.
+
+We’re cheering you on from here 💛  
+---  
+📬 [Contact Us](https://intendedevents.ca/pages/contact-us)  
+📸 [Follow on Instagram](https://instagram.com/intendedevents)
+""")
+
 
