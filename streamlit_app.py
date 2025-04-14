@@ -88,24 +88,36 @@ scaling_factor = guest_count / base_guests
 budget_tiers = {"Essential": {}, "Enhanced": {}, "Elevated": {}}
 tier_totals = {"Essential": 0, "Enhanced": 0, "Elevated": 0}
 
-for tier_name, index in zip(["Essential", "Enhanced", "Elevated"], [0, 1, 2]):
-    weights = np.array([priorities[cat] for cat, _, _ in categories_info])
-    base_vals = np.array([base_costs[cat][index] * scaling_factor for cat, _, _ in categories_info])
+# Interpolate between Good, Better, Best using slider priority (1–5)
+def interpolate(value, good, better, best):
+    if value <= 2:
+        return good + (better - good) * ((value - 1) / 2)
+    elif value == 3:
+        return better
+    else:
+        return better + (best - better) * ((value - 3) / 2)
 
-    if include_attire:
-        attire_index = [cat for cat, _, _ in categories_info].index("Wedding Attire")
-        base_vals[attire_index] += wedding_party * 150
-    if include_beauty:
-        beauty_index = [cat for cat, _, _ in categories_info].index("Hair & Makeup")
-        base_vals[beauty_index] += wedding_party * 100
+for tier_name in ["Essential", "Enhanced", "Elevated"]:
+    tier_budget = {}
+    total = 0
 
-    total = sum(base_vals)
-    weighted_distribution = (weights / weights.sum()) * total
+    for cat, _, minimum in categories_info:
+        good, better, best = base_costs[cat]
+        priority = priorities[cat]
+        value = interpolate(priority, good, better, best) * scaling_factor
 
-    for i, (cat, _, minimum) in enumerate(categories_info):
-        value = max(round(weighted_distribution[i]), minimum)
-        budget_tiers[tier_name][cat] = value
-    tier_totals[tier_name] = sum(budget_tiers[tier_name].values())
+        # Add wedding party extras where applicable
+        if cat == "Wedding Attire" and include_attire:
+            value += wedding_party * 150
+        if cat == "Hair & Makeup" and include_beauty:
+            value += wedding_party * 100
+
+        value = max(round(value), minimum)
+        tier_budget[cat] = value
+        total += value
+
+    budget_tiers[tier_name] = tier_budget
+    tier_totals[tier_name] = total
 
 # --- OUTPUT ---
 st.header("Step 2: See Your Estimated Budgets")
