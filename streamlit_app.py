@@ -51,8 +51,8 @@ base_costs = {
     "Decor & Rentals (Furniture, decor, tent, etc.)": [2500, 4500, 8000],  # Tent logic handled separately
     "Floral Design": [0, 0, 0],  # Calculated based on guest count below
     "Music/Entertainment (DJ, Band, Photobooth, etc.)": [2000, 3500, 6000],
-    "Photography": [3000, 4500, 7000],
-    "Videography": [2000, 3000, 5000],
+    "Photography": [3000, 4500, 8000],
+    "Videography": [2000, 5000, 8000],
     "Hair & Makeup": [1000, 1500, 2500],
     "Personal Florals (Bouquets, Boutonnieres, Crowns, etc.)": [800, 1500, 2500],
     "Wedding Attire": [2500, 6350, 12600],
@@ -73,7 +73,7 @@ category_minimums = {
     "Venues (your event's backdrop & setting)": 2000,
     "Decor & Rentals (Furniture, decor, tent, etc.)": 1500,
     "Photography": 1500,
-    "Videography": 1000,
+    "Videography": 1500,
     "Hair & Makeup": 400,
     "Personal Florals (Bouquets, Boutonnieres, Crowns, etc.)": 400,
     "Food": 3000,
@@ -146,7 +146,7 @@ if use_custom:
 
 # --- Improved priority weightings to ensure top choices push values toward max ---
 priority_weights = {
-    "Essential": {"top": [0.2, 0.3, 0.5], "mid": [0.6, 0.3, 0.1], "bottom": [1.0, 0.0, 0.0]},
+    "Essential": {"top": [0.1, 0.3, 0.6], "mid": [0.6, 0.3, 0.1], "bottom": [1.0, 0.0, 0.0]},
     "Enhanced": {"top": [0.0, 0.3, 0.7], "mid": [0.3, 0.4, 0.3], "bottom": [0.8, 0.2, 0.0]},
     "Elevated": {"top": [0.0, 0.1, 0.9], "mid": [0.2, 0.3, 0.5], "bottom": [0.5, 0.4, 0.1]}
 }
