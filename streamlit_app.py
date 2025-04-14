@@ -118,7 +118,7 @@ st.markdown("""
 
 
 
-💡 *Intended couples planning a Vancouver Island wedding can [contact us](https://intendedevents.ca/pages/contact-us) for a consultation or [follow us on Instagram](https://instagram.com/intendedevents) for more planning advice and inspiration.*
+*Intended couples planning a Vancouver Island wedding can [contact us](https://intendedevents.ca/pages/contact-us) for a consultation or [follow us on Instagram](https://instagram.com/intendedevents) for more planning advice and inspiration.*
 """)
 for tier in ["Essential", "Enhanced", "Elevated"]:
     st.subheader(f"{tier} Budget")
