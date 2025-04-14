@@ -168,8 +168,8 @@ for tier, weights in priority_weights.items():
         w = weights[category_priorities[cat]]
         value = (g * w[0] + b * w[1] + bst * w[2]) * scaling_factor
 
-if cat in category_minimums and cat in included_categories:
-    value = max(value, category_minimums[cat])
+        if cat in category_minimums and cat in included_categories:
+            value = max(value, category_minimums[cat])
 
         if cat == "Decor & Rentals (Furniture, decor, tent, etc.)" and tent_needed:
             sqft = guest_count * 12.5
