@@ -226,4 +226,3 @@ We’re cheering you on from here 💛
 📬 [Contact Us](https://intendedevents.ca/pages/contact-us)  
 📸 [Follow on Instagram](https://instagram.com/intendedevents)
 """)
-
