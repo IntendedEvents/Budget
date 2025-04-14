@@ -172,7 +172,11 @@ st.header("Estimated Budgets")
 for tier in ["Essential", "Enhanced", "Elevated"]:
     st.subheader(f"{tier} Budget")
     st.write(f"Total: ${tier_totals[tier]:,} | Per Guest: ${tier_totals[tier] // guest_count:,}/guest")
-    df = pd.DataFrame.from_dict(budget_tiers[tier], orient='index', columns=['Amount'])
+    df = pd.DataFrame.from_dict(
+        {k: v for k, v in budget_tiers[tier].items() if k != "_goal_spend"},
+        orient='index',
+        columns=['Amount']
+    )
 
     # Handle excluded categories visually and map for styling
     excluded = [cat for cat in df.index if cat not in included_categories]
