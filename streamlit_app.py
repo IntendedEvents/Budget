@@ -50,13 +50,10 @@ base_costs = {
 }
 
 # --- STREAMLIT APP START ---
-st.set_page_config(page_title="Wedding Budget Estimator", layout="centered")
-
 if os.path.exists("blk-MAIN.png"):
     logo = Image.open("blk-MAIN.png")
     st.image(logo, width=200)
 
-st.set_page_config(page_title="Wedding Budget Estimator", layout="centered")
 st.title("\ud83d\udc8d Wedding Budget Estimator")
 
 st.markdown("Enter your estimated guest count and rank your priorities. We'll show you what your budget could look like!")
