@@ -30,9 +30,9 @@ st.info("""
 # --- Input layout using columns ---
 col1, col2 = st.columns(2)
 with col1:
-        "Private Property",
-        "Standard Venue",
-        "Luxury/Hotel Venue"
+    "Private Property",
+    "Standard Venue",
+    "Luxury/Hotel Venue"
     ])
 with col2:
     floral_tier = st.radio("What best describes your floral vision?", [
@@ -44,20 +44,20 @@ with col2:
     "Private Property",
     "Standard Venue",
     "Luxury/Hotel Venue"
-])
+    ])
 
     "Minimal", "Moderate", "Lush"
-])
+    ])
 
 
 # --- Additional User Inputs ---
     "Private Property",
     "Standard Venue",
     "Luxury/Hotel Venue"
-])
+    ])
 
     "Minimal", "Moderate", "Lush"
-])
+    ])
 
 This tool is meant to help you **start the conversation** around your wedding budget — not to be a precise quote.
 
@@ -111,7 +111,7 @@ base_costs = {
     "Other (Signage, Stationery, Gifts, Favours, etc.)": [1200, 2500, 4500]
 }
 
-    venue_type = st.radio("What type of venue are you considering?", [
+venue_type = st.radio("What type of venue are you considering?", [
 # --- Venue Cost Logic by Type ---
 if venue_type == "Private Property":
     base_costs["Venues (your event's backdrop & setting)"] = [1000, 3000, 6000]
