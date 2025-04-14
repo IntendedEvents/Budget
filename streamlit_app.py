@@ -54,7 +54,7 @@ if os.path.exists("blk-MAIN.png"):
     logo = Image.open("blk-MAIN.png")
     st.image(logo, width=200)
 
-st.title("\ud83d\udc8d Wedding Budget Estimator")
+st.title("💍 Wedding Budget Estimator")
 
 st.markdown("Enter your estimated guest count and rank your priorities. We'll show you what your budget could look like!")
 
