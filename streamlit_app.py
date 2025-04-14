@@ -44,6 +44,28 @@ categories = [
     "Other (Signage, Stationery, Gifts, Favours, etc.)"
 ]
 
+base_costs = {
+    "Officiant": [150, 600, 1500],
+    "Ceremony Decor, Rentals, and AV": [500, 3000, 6000],
+    "Venues (your event's backdrop & setting)": [2000, 7000, 20000],
+    "Decor & Rentals (Furniture, decor, tent, etc.)": [2500, 4500, 8000],  # Tent logic handled separately
+    "Floral Design": [0, 0, 0],  # Calculated based on guest count below
+    "Music/Entertainment (DJ, Band, Photobooth, etc.)": [2000, 3500, 6000],
+    "Photography": [3000, 4500, 7000],
+    "Videography": [2000, 3000, 5000],
+    "Hair & Makeup": [1000, 1500, 2500],
+    "Personal Florals (Bouquets, Boutonnieres, Crowns, etc.)": [800, 1500, 2500],
+    "Wedding Attire": [2500, 6350, 12600],
+    "Food": [10400, 15600, 27000],
+    "Beverage": [4200, 6700, 13000],
+    "Stationery": [0, 0, 0],  # Calculated based on guest count below
+    "Transportation": [800, 1800, 3000],
+    "Planning Support": [1500, 2500, 4500],
+    "Event Management": [1000, 2000, 3000],
+    "Design Services": [1500, 3000, 6000],
+    "Other (Signage, Stationery, Gifts, Favours, etc.)": [1200, 2500, 4500]
+}
+
 # --- Minimum base charges to prevent underestimating fixed-cost categories ---
 category_minimums = {
     "Officiant": 150,
