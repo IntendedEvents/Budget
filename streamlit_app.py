@@ -176,8 +176,7 @@ if tier == "Elevated":
         mime='text/csv'
     )
 
-    st.markdown("""
-
+st.markdown("""
 ## What’s Next?
 
 If this feels like a helpful starting point, amazing!  
@@ -189,5 +188,4 @@ We are cheering you on from here!
 
 [Contact Us](https://intendedevents.ca/pages/contact-us)  
 [Follow on Instagram](https://instagram.com/intendedevents)
-
 """)
