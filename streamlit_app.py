@@ -187,7 +187,7 @@ If you're planning a **Vancouver Island wedding**, this tool was created with *y
 
 We are cheering you on from here!
 
-📬 [Contact Us](https://intendedevents.ca/pages/contact-us)  
-📸 [Follow on Instagram](https://instagram.com/intendedevents)
+[Contact Us](https://intendedevents.ca/pages/contact-us)  
+[Follow on Instagram](https://instagram.com/intendedevents)
 
 """)
