@@ -6,12 +6,12 @@ import os
 import plotly.express as px
 
 # --- Streamlit Config ---
-st.set_page_config(page_title="Vancouver Island Wedding Budget Estimator", layout="centered")
+st.set_page_config(page_title="Wedding Budget Estimator", layout="centered")
 if os.path.exists("blk-MAIN.png"):
     logo = Image.open("blk-MAIN.png")
     st.image(logo, width=200)
 
-st.title("💍 Vancouver Island Wedding Budget Estimator")
+st.title("💍 Wedding Budget Estimator")
 
 st.info("""
 This tool is meant to help you **start the conversation** around your wedding budget — not to be a precise quote.
@@ -256,6 +256,25 @@ for tier in ["Essential", "Enhanced", "Elevated"]:
              "\n".join([f"{k}: ${v:,}" for k, v in df["Amount"].items()])
     st.text_area(f"{tier} Summary:", summary, height=300)
 
+if tier == "Elevated":
+    st.markdown("""
+---
+
+## What’s Next?
+
+If this feels like a helpful starting point — amazing!  
+Take your results and review them with your wedding planner or someone with experience navigating local vendors and venues.
+
+If you’re planning a **Vancouver Island wedding**, this tool was created with *you* in mind — whether you're dreaming of forest elopements, coastal celebrations, or backyard parties with your people.
+
+We’re cheering you on from here 💛
+
+📬 [Contact Us](https://intendedevents.ca/pages/contact-us)  
+📸 [Follow on Instagram](https://instagram.com/intendedevents)
+
+> This budget calculator is a conversation starter, not a final quote. Pricing may vary depending on your venue, vendor selections, region, and personal style.
+""")
+
     csv = df.to_csv().encode('utf-8')
     st.download_button(
         label=f"⬇️ Download {tier} Budget as CSV",
@@ -263,3 +282,13 @@ for tier in ["Essential", "Enhanced", "Elevated"]:
         file_name=f'{tier.lower()}_budget.csv',
         mime='text/csv'
     )
+
+st.markdown("""
+---
+
+🔗 For more help planning your Vancouver Island wedding:
+- [Contact Intended Events](https://intendedevents.ca/pages/contact-us)
+- [Follow us on Instagram @intendedevents](https://instagram.com/intendedevents)
+
+✨ Remember: This is just a starting point. Vendor pricing and logistics can vary greatly depending on the location, time of year, and what kind of experience you're building. We always recommend chatting with a planner!
+""")
