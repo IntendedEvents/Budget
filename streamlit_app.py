@@ -183,8 +183,12 @@ for tier in ["Essential", "Enhanced", "Elevated"]:
     if "_goal_spend" in df.index:
         df = df.drop("_goal_spend")
 
-    styled = df.style.format("${:,.0f}")
-    st.dataframe(styled)
+    try:
+        styled = df.style.format("${:,.0f}")
+        st.dataframe(styled)
+    except Exception as e:
+        st.warning("Couldn't format the table with styling. Showing raw values instead.")
+        st.dataframe(df)
 
     chart = px.pie(
         df[df["Amount"] > 0].reset_index(),
