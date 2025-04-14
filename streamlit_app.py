@@ -170,11 +170,20 @@ for tier, weights in priority_weights.items():
         value = (g * w[0] + b * w[1] + bst * w[2]) * scaling_factor
 
         if cat == "Decor & Rentals (Furniture, decor, tent, etc.)" and tent_needed:
-            sqft = guest_count * 12.5  # average 10–15 sqft per guest
-            base_tent_cost = 1500 if sqft <= 1000 else (8900 if sqft >= 6000 else sqft * 1.5)
-            if category_priorities[cat] == "top":
-                base_tent_cost += 3000  # elevated tent experience
-            value += base_tent_cost
+    sqft = guest_count * 12.5
+    if sqft <= 800:
+        base_tent_cost = 2500
+    elif sqft <= 1500:
+        base_tent_cost = 5000
+    elif sqft <= 2500:
+        base_tent_cost = 6500
+    else:
+        base_tent_cost = 8000
+
+    if category_priorities[cat] == "top":
+        base_tent_cost += 3000
+
+    value += base_tent_cost
         if cat == "Hair & Makeup":
             value += (marrier_hair + wp_hair + marrier_makeup + wp_makeup) * 100
         if cat == "Wedding Attire":
@@ -190,6 +199,16 @@ for tier, weights in priority_weights.items():
 # --- Output ---
 st.markdown("---")
 st.header("Estimated Budgets")
+
+st.markdown("""
+---
+
+> This calculator is designed to support weddings with **guest counts of 30–200** and budgets ranging from **$20,000–$100,000+**. It is not optimized for elopements, ultra-luxury weddings, or micro-celebrations with unique requirements.
+
+> For the most accurate budgeting and guidance, we recommend reviewing your results with a planner who knows your region and priorities well.
+
+💡 *Intended couples planning a Vancouver Island wedding can [contact us](https://intendedevents.ca/pages/contact-us) for a consultation or [follow us on Instagram](https://instagram.com/intendedevents) for more planning advice and inspiration.*
+""")
 for tier in ["Essential", "Enhanced", "Elevated"]:
     st.subheader(f"{tier} Budget")
     st.write(f"Total: ${tier_totals[tier]:,} | Per Guest: ${tier_totals[tier] // guest_count:,}/guest")
