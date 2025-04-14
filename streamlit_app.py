@@ -3,34 +3,43 @@ import pandas as pd
 import numpy as np
 from PIL import Image
 import os
+import plotly.express as px
 
-# --- CATEGORY DATA WITH GROUPINGS, TOOLTIPS, AND DEFAULT MINIMUMS ---
+# --- Streamlit Config ---
+st.set_page_config(page_title="Wedding Budget Estimator", layout="centered")
+if os.path.exists("blk-MAIN.png"):
+    logo = Image.open("blk-MAIN.png")
+    st.image(logo, width=200)
+
+st.title("💍 Wedding Budget Estimator")
+
+# --- Categories ---
 category_groups = {
     "Venues & Setup": [
-        ("Venues (your event's backdrop & setting)", "Covers ceremony & reception venue fees", 1500),
-        ("Ceremony (Rentals, Decor, Officiant, etc.)", "Includes seating, decor, and your officiant", 1000),
-        ("Decor & Rentals (Furniture, decor, tent, etc.)", "Furniture, lighting, linens, tents, and more", 1000),
+        "Venues (your event's backdrop & setting)",
+        "Ceremony (Rentals, Decor, Officiant, etc.)",
+        "Decor & Rentals (Furniture, decor, tent, etc.)",
     ],
     "Experience & Atmosphere": [
-        ("Music/Entertainment (DJ, Band, Photobooth, etc.)", "Live music, DJs, or unique entertainment", 800),
-        ("Photo/Video", "Photography and videography services", 2000),
-        ("Hair & Makeup", "Beauty services for the wedding day", 500),
-        ("Personal Florals (Bouquets, Boutonnieres, Crowns, etc.)", "Florals for the couple & wedding party", 400),
-        ("Wedding Attire", "Wedding dress, suit, and accessories", 800),
+        "Music/Entertainment (DJ, Band, Photobooth, etc.)",
+        "Photo/Video",
+        "Hair & Makeup",
+        "Personal Florals (Bouquets, Boutonnieres, Crowns, etc.)",
+        "Wedding Attire",
     ],
     "Guest Experience": [
-        ("Food", "Meals, desserts, and food experiences", 5000),
-        ("Beverage", "Bar service, alcohol, and non-alcoholic drinks", 1000),
-        ("Stationery", "Invitations, signage, menus, and more", 300),
-        ("Transportation", "Shuttles, vintage cars, ferries, etc.", 300),
+        "Food",
+        "Beverage",
+        "Stationery",
+        "Transportation",
     ],
     "Planning & Extras": [
-        ("Planner", "Planning, coordination, and support", 1000),
-        ("Other (Signage, Stationery, Gifts, Favours, etc.)", "Things like favours, gifts, and signage", 300),
+        "Planner",
+        "Other (Signage, Stationery, Gifts, Favours, etc.)",
     ]
 }
 
-categories_info = sum(category_groups.values(), [])
+categories = sum(category_groups.values(), [])
 
 base_costs = {
     "Venues (your event's backdrop & setting)": [3000, 7000, 12000],
@@ -46,99 +55,101 @@ base_costs = {
     "Stationery": [1000, 2000, 3500],
     "Transportation": [800, 1800, 3000],
     "Planner": [1500, 3500, 7000],
-    "Other (Signage, Stationery, Gifts, Favours, etc.)": [1000, 2000, 4000]
+    "Other (Signage, Stationery, Gifts, Favours, etc.)": [1000, 2000, 4000],
 }
 
-# --- STREAMLIT APP START ---
-if os.path.exists("blk-MAIN.png"):
-    logo = Image.open("blk-MAIN.png")
-    st.image(logo, width=200)
+minimums = {
+    "Hair & Makeup": 500,
+    "Wedding Attire": 800,
+    "Planner": 1000,
+    "Venue": 1500,
+}
 
-st.title("💍 Wedding Budget Estimator")
+# --- Input Fields ---
+st.markdown("Enter your wedding details below. We'll calculate three budget levels based on your unique priorities!")
 
-st.markdown("Enter your estimated guest count and rank your priorities. We'll show you what your budget could look like!")
-
-guest_count = st.number_input("Guest Count", min_value=1, max_value=500, value=100)
-wedding_party = st.number_input("Number of people in your wedding party", min_value=0, max_value=20, value=4)
-include_attire = st.checkbox("We're paying for wedding party attire")
-include_beauty = st.checkbox("We're paying for wedding party hair & makeup")
-
-# Recommend general per-guest pricing tiers
-st.markdown("---")
-if guest_count:
-    st.info(f"\U0001F4A1 For {guest_count} guests, average weddings often range from **${guest_count * 200:,} to ${guest_count * 600:,}** total. Your budget results will fall within or around this range depending on your priorities.")
-
-st.markdown("---")
-
-st.header("Step 1: Set Your Priorities")
-st.markdown("Use the sliders to rank how important each category is to you (1 = low, 5 = high). Hover to learn more.")
-
-priorities = {}
-for group, items in category_groups.items():
-    with st.expander(group):
-        for category, tooltip, _ in items:
-            priorities[category] = st.slider(category, 1, 5, 3, help=tooltip)
+guest_count = st.number_input("Guest Count", min_value=1, value=100)
+dresses = st.number_input("Wedding Party Dresses You're Paying For", min_value=0, value=0)
+suits = st.number_input("Wedding Party Suits You're Paying For", min_value=0, value=0)
+marrier_hair = st.number_input("How many marriers are getting hair done?", min_value=0, value=1)
+marrier_makeup = st.number_input("How many marriers are getting makeup done?", min_value=0, value=1)
+wp_hair = st.number_input("Wedding party hair services you're covering", min_value=0, value=0)
+wp_makeup = st.number_input("Wedding party makeup services you're covering", min_value=0, value=0)
 
 st.markdown("---")
+st.subheader("Step 2: Select Your Priorities")
+top_3 = st.multiselect("Choose Your TOP 3 Priorities", categories, max_selections=3)
+bottom_3 = st.multiselect("Choose Your BOTTOM 3 Priorities", [c for c in categories if c not in top_3], max_selections=3)
 
-# --- BUDGET TIER ESTIMATION ---
-base_guests = 100
-scaling_factor = guest_count / base_guests
-
-budget_tiers = {"Essential": {}, "Enhanced": {}, "Elevated": {}}
-tier_totals = {"Essential": 0, "Enhanced": 0, "Elevated": 0}
-
-# Interpolate between Good, Better, Best using slider priority (1–5)
-def interpolate(value, good, better, best):
-    if value <= 2:
-        return good + (better - good) * ((value - 1) / 2)
-    elif value == 3:
-        return better
+# Assign priority levels
+def get_priority(cat):
+    if cat in top_3:
+        return "top"
+    elif cat in bottom_3:
+        return "bottom"
     else:
-        return better + (best - better) * ((value - 3) / 2)
+        return "mid"
 
-for tier_name in ["Essential", "Enhanced", "Elevated"]:
-    tier_budget = {}
+# Priority logic map for tiered interpolation
+priority_weights = {
+    "Essential": {
+        "top": [0.6, 0.4, 0.0],
+        "mid": [0.8, 0.2, 0.0],
+        "bottom": [1.0, 0.0, 0.0],
+    },
+    "Enhanced": {
+        "top": [0.3, 0.7, 0.0],
+        "mid": [0.0, 0.5, 0.5],
+        "bottom": [0.8, 0.2, 0.0],
+    },
+    "Elevated": {
+        "top": [0.0, 0.1, 0.9],
+        "mid": [0.0, 0.2, 0.8],
+        "bottom": [0.5, 0.5, 0.0],
+    },
+}
+
+# --- Budget Calculation ---
+scaling_factor = guest_count / 100
+budget_tiers = {"Essential": {}, "Enhanced": {}, "Elevated": {}}
+tier_totals = {}
+
+for tier in budget_tiers:
     total = 0
+    for cat in categories:
+        pri = get_priority(cat)
+        g, b, bst = base_costs[cat]
+        w = priority_weights[tier][pri]
+        value = (g * w[0] + b * w[1] + bst * w[2]) * scaling_factor
 
-    for cat, _, minimum in categories_info:
-        good, better, best = base_costs[cat]
-        priority = priorities[cat]
-        value = interpolate(priority, good, better, best) * scaling_factor
+        # Add-ons
+        if cat == "Hair & Makeup":
+            value += (marrier_hair + wp_hair) * 100 + (marrier_makeup + wp_makeup) * 100
+        if cat == "Wedding Attire":
+            value += dresses * 250 + suits * 200
 
-        # Add wedding party extras where applicable
-        if cat == "Wedding Attire" and include_attire:
-            value += wedding_party * 150
-        if cat == "Hair & Makeup" and include_beauty:
-            value += wedding_party * 100
-
-        value = max(round(value), minimum)
-        tier_budget[cat] = value
+        value = round(value)
+        budget_tiers[tier][cat] = value
         total += value
 
-    budget_tiers[tier_name] = tier_budget
-    tier_totals[tier_name] = total
+    tier_totals[tier] = total
 
-# --- OUTPUT ---
-st.header("Step 2: See Your Estimated Budgets")
+# --- Display Budgets ---
+st.markdown("---")
+st.header("Estimated Budgets")
 for tier in ["Essential", "Enhanced", "Elevated"]:
     st.subheader(f"{tier} Budget")
-    st.write(f"Estimated Total: ${tier_totals[tier]:,}  ")
-    per_guest = tier_totals[tier] / guest_count
-    st.write(f"Per Guest: ${per_guest:,.0f}")
+    st.write(f"Total: ${tier_totals[tier]:,} | Per Guest: ${tier_totals[tier] // guest_count:,}/guest")
 
-    budget_df = pd.DataFrame.from_dict(budget_tiers[tier], orient='index', columns=['Amount'])
-    st.dataframe(budget_df.style.format("${:,.0f}"))
+    df = pd.DataFrame.from_dict(budget_tiers[tier], orient='index', columns=['Amount'])
+    st.dataframe(df.style.format("${:,.0f}"))
 
-    # --- Chart ---
-    import plotly.express as px
-    chart = px.pie(budget_df.reset_index(), names='index', values='Amount', title=f"{tier} Budget Breakdown")
+    chart = px.pie(df.reset_index(), names='index', values='Amount', title=f"{tier} Budget Breakdown")
     st.plotly_chart(chart)
 
-    # --- Shareable Text ---
-    result_summary = f"{tier} Wedding Budget Estimate\nTotal: ${tier_totals[tier]:,}\nPer Guest: ${per_guest:,.0f}\n\nBreakdown:\n" + \
-                     "\n".join([f"{cat}: ${amt:,}" for cat, amt in budget_tiers[tier].items()])
-    st.text_area(f"{tier} Copyable Summary:", result_summary, height=300)
+    summary = f"{tier} Wedding Budget Estimate\nTotal: ${tier_totals[tier]:,}\nPer Guest: ${tier_totals[tier] // guest_count:,}\n\nBreakdown:\n" + \
+              "\n".join([f"{k}: ${v:,}" for k, v in budget_tiers[tier].items()])
+    st.text_area(f"{tier} Summary:", summary, height=300)
 
-st.markdown("---")
-st.markdown("\U0001F4C0 *To save your results, take a screenshot or print this page as a PDF.*")
+st.markdown("\n💾 *Take a screenshot or print this page to save your budget breakdowns.*")
+
