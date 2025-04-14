@@ -13,18 +13,131 @@ if os.path.exists("blk-MAIN.png"):
 
 st.title("💍 Vancouver Island Wedding Budget Estimator")
 
-st.markdown("""
-This calculator is designed to support weddings with **guest counts of 30-200** and budgets ranging from **$20,000-$100,000+**.
-It is not optimized for elopements, ultra-luxury weddings, or micro-celebrations with unique requirements.
+st.info("""
+This tool is meant to help you **start the conversation** around your wedding budget — not to be a precise quote.
 
-For the most accurate budgeting and guidance, we recommend reviewing your results with a planner who knows your region and priorities well.
+It uses estimated ranges based on real weddings and vendor averages across Vancouver Island, but actual prices may vary depending on season, style, and location.
 
-_Intended couples planning a Vancouver Island wedding can [contact us](https://intendedevents.ca/pages/contact-us) or follow us on [Instagram](https://instagram.com/intendedevents) for more planning advice and inspiration._
+Take this as your planning launchpad, not your final spreadsheet 🌛
 """)
 
-# --- User Inputs: Venue & Floral Preferences (moved earlier to avoid NameError) ---
+# --- Categories and Base Costs ---
+categories = [
+    "Officiant",
+    "Ceremony Decor, Rentals, and AV",
+    "Venues (your event's backdrop & setting)",
+    "Decor & Rentals (Furniture, decor, tent, etc.)",
+    "Floral Design",
+    "Music/Entertainment (DJ, Band, Photobooth, etc.)",
+    "Photography",
+    "Videography",
+    "Hair & Makeup",
+    "Personal Florals (Bouquets, Boutonnieres, Crowns, etc.)",
+    "Wedding Attire",
+    "Food",
+    "Beverage",
+    "Stationery",
+    "Transportation",
+    "Planning Support",
+    "Event Management",
+    "Design Services",
+    "Other (Signage, Stationery, Gifts, Favours, etc.)"
+]
 
-# --- Input layout using columns ---
+base_costs = {
+    "Officiant": [150, 600, 1500],
+    "Ceremony Decor, Rentals, and AV": [500, 3000, 6000],
+    "Venues (your event's backdrop & setting)": [2000, 7000, 20000],
+    "Decor & Rentals (Furniture, decor, tent, etc.)": [2500, 4500, 8000],  # Tent logic handled separately
+    "Floral Design": [0, 0, 0],  # Calculated based on guest count below
+    "Music/Entertainment (DJ, Band, Photobooth, etc.)": [2000, 3500, 6000],
+    "Photography": [3000, 4500, 8000],
+    "Videography": [2000, 5000, 8000],
+    "Hair & Makeup": [1000, 1500, 2500],
+    "Personal Florals (Bouquets, Boutonnieres, Crowns, etc.)": [800, 1500, 2500],
+    "Wedding Attire": [2500, 6350, 12600],
+    "Food": [10400, 15600, 27000],
+    "Beverage": [4200, 6700, 13000],
+    "Stationery": [0, 0, 0],  # Calculated based on guest count below
+    "Transportation": [800, 1800, 3000],
+    "Planning Support": [1500, 2500, 4500],
+    "Event Management": [1000, 2000, 3000],
+    "Design Services": [1500, 3000, 6000],
+    "Other (Signage, Stationery, Gifts, Favours, etc.)": [1200, 2500, 4500]
+}
+
+# --- Minimum base charges to prevent underestimating fixed-cost categories ---
+category_minimums = {
+    "Officiant": 150,
+    "Ceremony Decor, Rentals, and AV": 500,
+    "Venues (your event's backdrop & setting)": 2000,
+    "Decor & Rentals (Furniture, decor, tent, etc.)": 1500,
+    "Photography": 1500,
+    "Videography": 1500,
+    "Hair & Makeup": 400,
+    "Personal Florals (Bouquets, Boutonnieres, Crowns, etc.)": 400,
+    "Food": 3000,
+    "Beverage": 1000,
+    "Stationery": 300,
+    "Transportation": 300,
+    "Planning Support": 1500,
+    "Event Management": 1000,
+    "Design Services": 1000,
+    "Other (Signage, Stationery, Gifts, Favours, etc.)": 300
+}
+
+# --- Inputs & Priorities ---
+guest_count = st.number_input("Guest Count", min_value=1, value=100)
+dresses = st.number_input("Wedding Party Dresses You're Paying For", min_value=0, value=0)
+suits = st.number_input("Wedding Party Suits You're Paying For", min_value=0, value=0)
+marrier_hair = st.number_input("How many marriers are getting hair done?", min_value=0, value=1)
+marrier_makeup = st.number_input("How many marriers are getting makeup done?", min_value=0, value=1)
+wp_hair = st.number_input("Wedding party hair services you're covering", min_value=0, value=0)
+wp_makeup = st.number_input("Wedding party makeup services you're covering", min_value=0, value=0)
+
+st.markdown("---")
+st.subheader("Step 2: Select Your Experience Priorities")
+
+goals = {
+    "🌿 A Beautiful Atmosphere": "Creating a visually stunning space with decor, florals, and lighting",
+    "💍 A Meaningful Ceremony": "Prioritizing the emotional heart of your day — your vows and the setting",
+    "🍽️ Incredible Food & Drink": "Ensuring guests are wowed by the meal, drinks, and overall experience",
+    "📸 Memories that Last Forever": "Capturing your day through photography and video",
+    "🛋️ A Comfortable, Seamless Experience": "Guests feel cared for and everything flows smoothly",
+    "🎶 A Great Party & Vibe": "Bringing the energy with music, dancing, and unforgettable moments",
+    "💄 Looking and Feeling Your Best": "Style, beauty, and confidence for you and your people",
+    "🧘 Stress-Free Planning": "Ongoing support and logistics that remove overwhelm",
+    "🎨 A Wedding That Feels and Flows Beautifully": "Design, flow, and cohesive aesthetic throughout the day",
+    "✨ A Unique and Personalized Experience": "Touches that tell your story, from signage to stationery"
+}
+
+category_to_goals = {
+    "Officiant": ["💍 A Meaningful Ceremony"],
+    "Ceremony Decor, Rentals, and AV": ["🌿 A Beautiful Atmosphere", "💍 A Meaningful Ceremony"],
+    "Venues (your event's backdrop & setting)": ["🎨 A Wedding That Feels and Flows Beautifully"],
+    "Decor & Rentals (Furniture, decor, tent, etc.)": ["🌿 A Beautiful Atmosphere"],
+    "Floral Design": ["🌿 A Beautiful Atmosphere"],
+    "Music/Entertainment (DJ, Band, Photobooth, etc.)": ["🎶 A Great Party & Vibe"],
+    "Photography": ["📸 Memories that Last Forever"],
+    "Videography": ["📸 Memories that Last Forever"],
+    "Hair & Makeup": ["💄 Looking and Feeling Your Best"],
+    "Personal Florals (Bouquets, Boutonnieres, Crowns, etc.)": ["🌿 A Beautiful Atmosphere"],
+    "Wedding Attire": ["💄 Looking and Feeling Your Best"],
+    "Food": ["🍽️ Incredible Food & Drink"],
+    "Beverage": ["🍽️ Incredible Food & Drink"],
+    "Stationery": ["✨ A Unique and Personalized Experience"],
+    "Transportation": ["🛋️ A Comfortable, Seamless Experience", "🎨 A Wedding That Feels and Flows Beautifully"],
+    "Planning Support": ["🧘 Stress-Free Planning", "🎨 A Wedding That Feels and Flows Beautifully"],
+    "Event Management": ["🧘 Stress-Free Planning", "🛋️ A Comfortable, Seamless Experience"],
+    "Design Services": ["🎨 A Wedding That Feels and Flows Beautifully"],
+    "Other (Signage, Stationery, Gifts, Favours, etc.)": ["✨ A Unique and Personalized Experience"]
+}
+
+for icon_title, desc in goals.items():
+    st.markdown(f"**{icon_title}** — {desc}")
+
+top_3 = st.multiselect("Top 3 Priorities", list(goals.keys()), max_selections=3)
+lowest = st.multiselect("Optional: Do Not Prioritize", [g for g in goals if g not in top_3])
 
 use_custom = st.checkbox("🎛️ Advanced Customization: I only want to include specific elements in my budget (click ❌ to remove anything you’re not including)")
 included_categories = categories.copy()
@@ -111,6 +224,15 @@ for tier, weights in priority_weights.items():
 st.markdown("---")
 st.header("Estimated Budgets")
 
+st.markdown("""
+---
+
+> This calculator is designed to support weddings with **guest counts of 30–200** and budgets ranging from **$20,000–$100,000+**. It is not optimized for elopements, ultra-luxury weddings, or micro-celebrations with unique requirements.
+
+> For the most accurate budgeting and guidance, we recommend reviewing your results with a planner who knows your region and priorities well.
+
+💡 *Intended couples planning a Vancouver Island wedding can [contact us](https://intendedevents.ca/pages/contact-us) for a consultation or [follow us on Instagram](https://instagram.com/intendedevents) for more planning advice and inspiration.*
+""")
 for tier in ["Essential", "Enhanced", "Elevated"]:
     st.subheader(f"{tier} Budget")
     st.write(f"Total: ${tier_totals[tier]:,} | Per Guest: ${tier_totals[tier] // guest_count:,}/guest")
@@ -167,15 +289,20 @@ if tier == "Elevated":
         mime='text/csv'
     )
 
-st.markdown("""
-## What's Next?
-If this feels like a helpful starting point, amazing!  
+    st.markdown("""
+---
+
+## What’s Next?
+
+If this feels like a helpful starting point — amazing!  
 Take your results and review them with your wedding planner or someone with experience navigating local vendors and venues.
 
-If you're planning a **Vancouver Island wedding**, this tool was created with *you* in mind — whether you're dreaming of forest elopements, coastal celebrations, or backyard parties with your people.
+If you’re planning a **Vancouver Island wedding**, this tool was created with *you* in mind — whether you're dreaming of forest elopements, coastal celebrations, or backyard parties with your people.
 
-We are cheering you on from here!
+We’re cheering you on from here 💛
 
-[Contact Us](https://intendedevents.ca/pages/contact-us)  
-[Follow on Instagram](https://instagram.com/intendedevents)
+📬 [Contact Us](https://intendedevents.ca/pages/contact-us)  
+📸 [Follow on Instagram](https://instagram.com/intendedevents)
+
+> This budget calculator is a conversation starter, not a final quote. Pricing may vary depending on your venue, vendor selections, region, and personal style.
 """)
