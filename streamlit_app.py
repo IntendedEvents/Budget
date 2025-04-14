@@ -177,11 +177,12 @@ for tier in ["Essential", "Enhanced", "Elevated"]:
     st.subheader(f"{tier} Budget")
     st.write(f"Total: ${tier_totals[tier]:,} | Per Guest: ${tier_totals[tier] // guest_count:,}/guest")
     df = pd.DataFrame.from_dict(budget_tiers[tier], orient='index', columns=['Amount'])
+    excluded = [cat for cat in df.index if cat not in included_categories]
+    for cat in excluded:
+        df.rename(index={cat: f"⚪ {cat}"}, inplace=True)
     df = df.drop("_goal_spend")
     styled = df.style.format("${:,.0f}")
-    for cat in df.index:
-        if cat not in included_categories:
-            styled = styled.set_properties(subset=[cat], **{'color': 'grey'})
+    
     st.dataframe(styled)
     chart = px.pie(
         df[df["Amount"] > 0].reset_index(),
