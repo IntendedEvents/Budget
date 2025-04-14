@@ -22,9 +22,6 @@ For the most accurate budgeting and guidance, we recommend reviewing your result
 _Intended couples planning a Vancouver Island wedding can [contact us](https://intendedevents.ca/pages/contact-us) or follow us on [Instagram](https://instagram.com/intendedevents) for more planning advice and inspiration._
 """)
 
-
-st.info("""
-
 # --- User Inputs: Venue & Floral Preferences (moved earlier to avoid NameError) ---
 
 # --- Input layout using columns ---
