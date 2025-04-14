@@ -45,25 +45,25 @@ categories = [
 ]
 
 base_costs = {
-    "Officiant": [400, 600, 1000],
-    "Ceremony Decor, Rentals, and AV": [1200, 3000, 6000],
-    "Venues (your event's backdrop & setting)": [3000, 7000, 12000],
-    "Decor & Rentals (Furniture, decor, tent, etc.)": [2500, 4500, 8000],
-    "Floral Design": [2000, 4000, 8000],
+    "Officiant": [150, 600, 1500],
+    "Ceremony Decor, Rentals, and AV": [500, 3000, 6000],
+    "Venues (your event's backdrop & setting)": [2000, 7000, 20000],
+    "Decor & Rentals (Furniture, decor, tent, etc.)": [2500, 4500, 8000],  # Tent add-on applied separately
+    "Floral Design": [0, 0, 0],  # Dynamically calculated per guest below
     "Music/Entertainment (DJ, Band, Photobooth, etc.)": [2000, 3500, 6000],
     "Photography": [3000, 4500, 7000],
     "Videography": [2000, 3000, 5000],
     "Hair & Makeup": [1000, 1500, 2500],
     "Personal Florals (Bouquets, Boutonnieres, Crowns, etc.)": [800, 1500, 2500],
     "Wedding Attire": [2500, 6350, 12600],
-    "Food": [10400, 15600, 25900],
-    "Beverage": [4200, 6700, 12200],
-    "Stationery": [1000, 2000, 3500],
+    "Food": [10400, 15600, 27000],
+    "Beverage": [4200, 6700, 13000],
+    "Stationery": [0, 0, 0],  # Calculated per guest
     "Transportation": [800, 1800, 3000],
-    "Planning Support": [1500, 2500, 4000],
+    "Planning Support": [1500, 2500, 4500],
     "Event Management": [1000, 2000, 3000],
     "Design Services": [1500, 3000, 6000],
-    "Other (Signage, Stationery, Gifts, Favours, etc.)": [1000, 2000, 4000]
+    "Other (Signage, Stationery, Gifts, Favours, etc.)": [1200, 2500, 4500]
 }
 
 # --- Inputs & Priorities ---
@@ -135,6 +135,9 @@ budget_tiers = {tier: {} for tier in priority_weights}
 tier_totals = {}
 category_priorities = {}
 
+# Tent toggle
+tent_needed = st.checkbox("Will you need a tent for your wedding?")
+
 for cat in categories:
     goals_for_cat = category_to_goals.get(cat, [])
     if any(g in top_3 for g in goals_for_cat):
@@ -151,9 +154,27 @@ for tier, weights in priority_weights.items():
         if cat not in included_categories:
             budget_tiers[tier][cat] = 0
             continue
-        g, b, bst = base_costs[cat]
+                # Custom logic for Floral Design, Stationery, Tent
+        if cat == "Floral Design":
+            count = guest_count / 8
+            min_val = 100 * count
+            avg_val = 350 * count
+            max_val = 800 * count
+            g, b, bst = min_val, avg_val, max_val
+        elif cat == "Stationery":
+            g, b, bst = guest_count * 10, guest_count * 20, guest_count * 35
+        else:
+            g, b, bst = base_costs[cat]
+
         w = weights[category_priorities[cat]]
         value = (g * w[0] + b * w[1] + bst * w[2]) * scaling_factor
+
+        if cat == "Decor & Rentals (Furniture, decor, tent, etc.)" and tent_needed:
+            sqft = guest_count * 12.5  # average 10–15 sqft per guest
+            base_tent_cost = 1500 if sqft <= 1000 else (8900 if sqft >= 6000 else sqft * 1.5)
+            if category_priorities[cat] == "top":
+                base_tent_cost += 3000  # elevated tent experience
+            value += base_tent_cost
         if cat == "Hair & Makeup":
             value += (marrier_hair + wp_hair + marrier_makeup + wp_makeup) * 100
         if cat == "Wedding Attire":
