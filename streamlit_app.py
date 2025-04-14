@@ -144,6 +144,17 @@ included_categories = categories.copy()
 if use_custom:
     included_categories = st.multiselect("Included Budget Categories", categories, default=categories)
 
+st.markdown("---")
+st.subheader("Step 3: Venue and Floral Preferences")
+
+venue_type = st.selectbox("What kind of venue are you planning?", [
+    "At Home Wedding", "Standard Venue", "Luxury Venue/Hotel"
+])
+
+floral_level = st.selectbox("How lush are your floral plans?", [
+    "Minimal", "Medium", "Lush"
+])
+
 # --- Improved priority weightings to ensure top choices push values toward max ---
 priority_weights = {
     "Essential": {"top": [0.1, 0.3, 0.6], "mid": [0.6, 0.3, 0.1], "bottom": [1.0, 0.0, 0.0]},
@@ -178,10 +189,20 @@ for tier, weights in priority_weights.items():
                 # Custom logic for Floral Design, Stationery, Tent
         if cat == "Floral Design":
             count = guest_count / 8
-            min_val = 100 * count
-            avg_val = 350 * count
-            max_val = 800 * count
+            if floral_level == "Minimal":
+                min_val, avg_val, max_val = 50 * count, 150 * count, 300 * count
+            elif floral_level == "Medium":
+                min_val, avg_val, max_val = 100 * count, 350 * count, 600 * count
+            else:  # Lush
+                min_val, avg_val, max_val = 200 * count, 500 * count, 800 * count
             g, b, bst = min_val, avg_val, max_val
+        elif cat == "Venues (your event's backdrop & setting)":
+            if venue_type == "At Home Wedding":
+                min_val, avg_val, max_val = 2000, 4000, 7000
+            elif venue_type == "Standard Venue":
+                min_val, avg_val, max_val = 5000, 8000, 12000
+            else:  # Luxury Venue/Hotel
+                min_val, avg_val, max_val = 9000, 14000, 20000
         elif cat == "Stationery":
             g, b, bst = guest_count * 10, guest_count * 20, guest_count * 35
         else:
