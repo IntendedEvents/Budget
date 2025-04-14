@@ -6,12 +6,12 @@ import os
 import plotly.express as px
 
 # --- Streamlit Config ---
-st.set_page_config(page_title="Wedding Budget Estimator", layout="centered")
+st.set_page_config(page_title="Vancouver Island Wedding Budget Estimator", layout="centered")
 if os.path.exists("blk-MAIN.png"):
     logo = Image.open("blk-MAIN.png")
     st.image(logo, width=200)
 
-st.title("💍 Wedding Budget Estimator")
+st.title("💍 Vancouver Island Wedding Budget Estimator")
 
 st.info("""
 This tool is meant to help you **start the conversation** around your wedding budget — not to be a precise quote.
