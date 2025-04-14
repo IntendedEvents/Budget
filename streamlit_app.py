@@ -196,9 +196,9 @@ for tier in ["Essential", "Enhanced", "Elevated"]:
     st.subheader(f"{tier} Budget by Experience Goal")
     goal_breakdown = budget_tiers[tier]["_goal_spend"]
     goal_df = pd.DataFrame.from_dict(goal_breakdown, orient='index', columns=['Amount'])
-    goal_df = goal_df[goal_df['Amount']] > 
+    goal_df = goal_df[goal_df['Amount'] > 0]
     goal_df['Percent'] = (goal_df['Amount'] / tier_totals[tier]) * 100
-    st.dataframe(goal_df.style.format({"Amount": "${:,.0f}", "Percnt": "{:.1f}%"}))
+    st.dataframe(goal_df.style.format({"Amount": "${:,.0f}", "Percent": "{:.1f}%"}))
     summary = f"{tier} Wedding Budget Estimate\nTotal: ${tier_totals[tier]:,}\nPer Guest: ${tier_totals[tier] // guest_count:,}\n\nBreakdown:\n" + \
               "\n".join([f"{k}: ${v:,}" for k, v in df.to_dict()['Amount'].items()])
     st.text_area(f"{tier} Summary:", summary, height=300)
@@ -226,3 +226,4 @@ We’re cheering you on from here 💛
 📬 [Contact Us](https://intendedevents.ca/pages/contact-us)  
 📸 [Follow on Instagram](https://instagram.com/intendedevents)
 """)
+
