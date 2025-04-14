@@ -113,6 +113,9 @@ base_costs = {
 }
 
 venue_type = st.radio("What type of venue are you considering?", [
+    "Private Property",
+    "Standard Venue",
+    "Luxury/Hotel Venue"])
 # --- Venue Cost Logic by Type ---
 if venue_type == "Private Property":
     base_costs["Venues (your event's backdrop & setting)"] = [1000, 3000, 6000]
