@@ -1,8 +1,9 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import pyperclip
 import matplotlib.pyplot as plt
+from PIL import Image
+import os
 
 # --- CATEGORY DATA WITH GROUPINGS, TOOLTIPS, AND DEFAULT MINIMUMS ---
 category_groups = {
@@ -50,11 +51,9 @@ base_costs = {
 }
 
 # --- STREAMLIT APP START ---
-from PIL import Image
-
-# Load and display custom logo
-logo = Image.open("blk-MAIN.png")
-st.image(logo, width=200)
+if os.path.exists("logo.png"):
+    logo = Image.open("logo.png")
+    st.image(logo, width=200)
 
 st.set_page_config(page_title="Wedding Budget Estimator", layout="centered")
 st.title("\ud83d\udc8d Wedding Budget Estimator")
@@ -69,7 +68,7 @@ include_beauty = st.checkbox("We're paying for wedding party hair & makeup")
 # Recommend general per-guest pricing tiers
 st.markdown("---")
 if guest_count:
-    st.info(f"💡 For {guest_count} guests, average weddings often range from **${guest_count * 200:,} to ${guest_count * 600:,}** total. Your budget results will fall within or around this range depending on your priorities.")
+    st.info(f"\U0001F4A1 For {guest_count} guests, average weddings often range from **${guest_count * 200:,} to ${guest_count * 600:,}** total. Your budget results will fall within or around this range depending on your priorities.")
 
 st.markdown("---")
 
@@ -95,13 +94,12 @@ for tier_name, index in zip(["Essential", "Enhanced", "Elevated"], [0, 1, 2]):
     weights = np.array([priorities[cat] for cat, _, _ in categories_info])
     base_vals = np.array([base_costs[cat][index] * scaling_factor for cat, _, _ in categories_info])
 
-    # Add cost for wedding party extras
     if include_attire:
         attire_index = [cat for cat, _, _ in categories_info].index("Wedding Attire")
-        base_vals[attire_index] += wedding_party * 150  # Estimate $150 per person
+        base_vals[attire_index] += wedding_party * 150
     if include_beauty:
         beauty_index = [cat for cat, _, _ in categories_info].index("Hair & Makeup")
-        base_vals[beauty_index] += wedding_party * 100  # Estimate $100 per person
+        base_vals[beauty_index] += wedding_party * 100
 
     total = sum(base_vals)
     weighted_distribution = (weights / weights.sum()) * total
@@ -124,8 +122,7 @@ for tier in ["Essential", "Enhanced", "Elevated"]:
 
     # --- Chart ---
     fig, ax = plt.subplots()
-    budget_df.plot(kind='pie', y='Amount', ax=ax, legend=False, autopct='%1.1f%%', startangle=90)
-    ax.set_ylabel("")
+    ax.pie(budget_df['Amount'], labels=budget_df.index, autopct='%1.1f%%', startangle=90)
     ax.set_title(f"{tier} Budget Breakdown")
     st.pyplot(fig)
 
@@ -135,4 +132,4 @@ for tier in ["Essential", "Enhanced", "Elevated"]:
     st.text_area(f"{tier} Copyable Summary:", result_summary, height=300)
 
 st.markdown("---")
-st.markdown("\ud83d\udcc0 *To save your results, take a screenshot or print this page as a PDF.*")
+st.markdown("\U0001F4C0 *To save your results, take a screenshot or print this page as a PDF.*")
