@@ -202,7 +202,7 @@ for tier in ["Essential", "Enhanced", "Elevated"]:
     goal_df['Percent'] = (goal_df['Amount'] / tier_totals[tier]) * 100
     st.dataframe(goal_df.style.format({"Amount": "${:,.0f}", "Percent": "{:.1f}%"}))
     summary = f"{tier} Wedding Budget Estimate\nTotal: ${tier_totals[tier]:,}\nPer Guest: ${tier_totals[tier] // guest_count:,}\n\nBreakdown:\n" + \
-              "\n".join([f"{k}: ${v:,}" for k, v in df.to_dict()['Amount'].items()])
+             "\n".join([f"{k}: ${v:,}" for k, v in df["Amount"].items()])
     st.text_area(f"{tier} Summary:", summary, height=300)
 
     csv = df.to_csv().encode('utf-8')
