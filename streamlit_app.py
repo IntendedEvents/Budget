@@ -14,6 +14,18 @@ if os.path.exists("blk-MAIN.png"):
 st.title("💍 Vancouver Island Wedding Budget Estimator")
 
 st.info("""
+
+# --- Additional User Inputs ---
+venue_type = st.radio("What type of venue are you considering?", [
+    "Private Property",
+    "Standard Venue",
+    "Luxury/Hotel Venue"
+])
+
+floral_tier = st.radio("What best describes your floral vision?", [
+    "Minimal", "Moderate", "Lush"
+])
+
 This tool is meant to help you **start the conversation** around your wedding budget — not to be a precise quote.
 
 It uses estimated ranges based on real weddings and vendor averages across Vancouver Island, but actual prices may vary depending on season, style, and location.
@@ -65,6 +77,15 @@ base_costs = {
     "Design Services": [1500, 3000, 6000],
     "Other (Signage, Stationery, Gifts, Favours, etc.)": [1200, 2500, 4500]
 }
+
+# --- Venue Cost Logic by Type ---
+if venue_type == "Private Property":
+    base_costs["Venues (your event's backdrop & setting)"] = [1000, 3000, 6000]
+elif venue_type == "Standard Venue":
+    base_costs["Venues (your event's backdrop & setting)"] = [2000, 7000, 15000]
+elif venue_type == "Luxury/Hotel Venue":
+    base_costs["Venues (your event's backdrop & setting)"] = [5000, 12000, 20000]
+
 
 # --- Minimum base charges to prevent underestimating fixed-cost categories ---
 category_minimums = {
