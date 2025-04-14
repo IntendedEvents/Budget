@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from PIL import Image
 import os
 
@@ -121,10 +120,9 @@ for tier in ["Essential", "Enhanced", "Elevated"]:
     st.dataframe(budget_df.style.format("${:,.0f}"))
 
     # --- Chart ---
-    fig, ax = plt.subplots()
-    ax.pie(budget_df['Amount'], labels=budget_df.index, autopct='%1.1f%%', startangle=90)
-    ax.set_title(f"{tier} Budget Breakdown")
-    st.pyplot(fig)
+    import plotly.express as px
+    chart = px.pie(budget_df.reset_index(), names='index', values='Amount', title=f"{tier} Budget Breakdown")
+    st.plotly_chart(chart)
 
     # --- Shareable Text ---
     result_summary = f"{tier} Wedding Budget Estimate\nTotal: ${tier_totals[tier]:,}\nPer Guest: ${per_guest:,.0f}\n\nBreakdown:\n" + \
