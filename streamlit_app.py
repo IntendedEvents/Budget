@@ -18,6 +18,15 @@ st.info("""
 # --- User Inputs: Venue & Floral Preferences (moved earlier to avoid NameError) ---
 venue_type = st.radio("What type of venue are you considering?", [
     "Private Property",
+
+# --- Venue Cost Logic by Type (moved after inputs to fix NameError) ---
+if venue_type == "Private Property":
+    base_costs["Venues (your event's backdrop & setting)"] = [1000, 3000, 6000]
+elif venue_type == "Standard Venue":
+    base_costs["Venues (your event's backdrop & setting)"] = [2000, 7000, 15000]
+elif venue_type == "Luxury/Hotel Venue":
+    base_costs["Venues (your event's backdrop & setting)"] = [5000, 12000, 20000]
+
     "Standard Venue",
     "Luxury/Hotel Venue"
 ])
@@ -99,13 +108,6 @@ base_costs = {
 }
 
 # --- Venue Cost Logic by Type ---
-if venue_type == "Private Property":
-    base_costs["Venues (your event's backdrop & setting)"] = [1000, 3000, 6000]
-elif venue_type == "Standard Venue":
-    base_costs["Venues (your event's backdrop & setting)"] = [2000, 7000, 15000]
-elif venue_type == "Luxury/Hotel Venue":
-    base_costs["Venues (your event's backdrop & setting)"] = [5000, 12000, 20000]
-
 
 # --- Minimum base charges to prevent underestimating fixed-cost categories ---
 category_minimums = {
