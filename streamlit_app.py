@@ -257,6 +257,22 @@ for tier in ["Essential", "Enhanced", "Elevated"]:
     st.text_area(f"{tier} Summary:", summary, height=300)
 
 if tier == "Elevated":
+    csv = df.to_csv().encode('utf-8')
+    st.download_button(
+        label=f"⬇️ Download {tier} Budget as CSV",
+        data=csv,
+        file_name=f'{tier.lower()}_budget.csv',
+        mime='text/csv'
+    )
+
+    csv = df.to_csv().encode('utf-8')
+    st.download_button(
+        label=f"⬇️ Download {tier} Budget as CSV",
+        data=csv,
+        file_name=f'{tier.lower()}_budget.csv',
+        mime='text/csv'
+    )
+
     st.markdown("""
 ---
 
@@ -269,19 +285,8 @@ If you’re planning a **Vancouver Island wedding**, this tool was created with 
 
 We’re cheering you on from here 💛
 
-📬 [Contact Us](https://intendedevents.ca/pages/contact-us)  
-📸 [Follow on Instagram](https://instagram.com/intendedevents)
-
 > This budget calculator is a conversation starter, not a final quote. Pricing may vary depending on your venue, vendor selections, region, and personal style.
 """)
-
-    csv = df.to_csv().encode('utf-8')
-    st.download_button(
-        label=f"⬇️ Download {tier} Budget as CSV",
-        data=csv,
-        file_name=f'{tier.lower()}_budget.csv',
-        mime='text/csv'
-    )
 
 st.markdown("""
 ---
@@ -290,5 +295,4 @@ st.markdown("""
 - [Contact Intended Events](https://intendedevents.ca/pages/contact-us)
 - [Follow us on Instagram @intendedevents](https://instagram.com/intendedevents)
 
-✨ Remember: This is just a starting point. Vendor pricing and logistics can vary greatly depending on the location, time of year, and what kind of experience you're building. We always recommend chatting with a planner!
 """)
