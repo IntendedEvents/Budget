@@ -15,7 +15,7 @@ st.title("💍 Vancouver Island Wedding Budget Estimator")
 
 st.info("""
 
-# --- User Inputs: Venue & Floral Preferences ---
+# --- User Inputs: Venue & Floral Preferences (moved earlier to avoid NameError) ---
 venue_type = st.radio("What type of venue are you considering?", [
     "Private Property",
     "Standard Venue",
@@ -23,6 +23,16 @@ venue_type = st.radio("What type of venue are you considering?", [
 ])
 
 floral_tier = st.radio("What best describes your floral vision?", [
+    "Minimal", "Moderate", "Lush"
+])
+
+
+# --- User Inputs: Venue & Floral Preferences ---
+    "Private Property",
+    "Standard Venue",
+    "Luxury/Hotel Venue"
+])
+
     "Minimal", "Moderate", "Lush"
 ])
 
