@@ -51,8 +51,8 @@ base_costs = {
 }
 
 # --- STREAMLIT APP START ---
-if os.path.exists("logo.png"):
-    logo = Image.open("logo.png")
+if os.path.exists("blk-MAIN.png"):
+    logo = Image.open("blk-MAIN.png")
     st.image(logo, width=200)
 
 st.set_page_config(page_title="Wedding Budget Estimator", layout="centered")
