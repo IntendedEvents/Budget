@@ -5,7 +5,6 @@ from PIL import Image
 import os
 import plotly.express as px
 
-# --- Streamlit Config ---
 st.set_page_config(page_title="Vancouver Island Wedding Budget Estimator", layout="centered")
 if os.path.exists("blk-MAIN.png"):
     logo = Image.open("blk-MAIN.png")
@@ -15,18 +14,8 @@ st.title("💍 Vancouver Island Wedding Budget Estimator")
 
 st.info("""
 
-# --- User Inputs: Venue & Floral Preferences (moved earlier to avoid NameError) ---
 venue_type = st.radio("What type of venue are you considering?", [
     "Private Property",
-
-# --- Venue Cost Logic by Type (moved after inputs to fix NameError) ---
-if venue_type == "Private Property":
-    base_costs["Venues (your event's backdrop & setting)"] = [1000, 3000, 6000]
-elif venue_type == "Standard Venue":
-    base_costs["Venues (your event's backdrop & setting)"] = [2000, 7000, 15000]
-elif venue_type == "Luxury/Hotel Venue":
-    base_costs["Venues (your event's backdrop & setting)"] = [5000, 12000, 20000]
-
     "Standard Venue",
     "Luxury/Hotel Venue"
 ])
@@ -36,7 +25,6 @@ floral_tier = st.radio("What best describes your floral vision?", [
 ])
 
 
-# --- User Inputs: Venue & Floral Preferences ---
     "Private Property",
     "Standard Venue",
     "Luxury/Hotel Venue"
@@ -46,7 +34,6 @@ floral_tier = st.radio("What best describes your floral vision?", [
 ])
 
 
-# --- Additional User Inputs ---
     "Private Property",
     "Standard Venue",
     "Luxury/Hotel Venue"
@@ -60,9 +47,7 @@ This tool is meant to help you **start the conversation** around your wedding bu
 It uses estimated ranges based on real weddings and vendor averages across Vancouver Island, but actual prices may vary depending on season, style, and location.
 
 Take this as your planning launchpad, not your final spreadsheet 🌛
-""")
 
-# --- Categories and Base Costs ---
 categories = [
     "Officiant",
     "Ceremony Decor, Rentals, and AV",
@@ -107,9 +92,14 @@ base_costs = {
     "Other (Signage, Stationery, Gifts, Favours, etc.)": [1200, 2500, 4500]
 }
 
-# --- Venue Cost Logic by Type ---
+if venue_type == "Private Property":
+    base_costs["Venues (your event's backdrop & setting)"] = [1000, 3000, 6000]
+elif venue_type == "Standard Venue":
+    base_costs["Venues (your event's backdrop & setting)"] = [2000, 7000, 15000]
+elif venue_type == "Luxury/Hotel Venue":
+    base_costs["Venues (your event's backdrop & setting)"] = [5000, 12000, 20000]
 
-# --- Minimum base charges to prevent underestimating fixed-cost categories ---
+
 category_minimums = {
     "Officiant": 150,
     "Ceremony Decor, Rentals, and AV": 500,
@@ -129,7 +119,6 @@ category_minimums = {
     "Other (Signage, Stationery, Gifts, Favours, etc.)": 300
 }
 
-# --- Inputs & Priorities ---
 guest_count = st.number_input("Guest Count", min_value=1, value=100)
 dresses = st.number_input("Wedding Party Dresses You're Paying For", min_value=0, value=0)
 suits = st.number_input("Wedding Party Suits You're Paying For", min_value=0, value=0)
@@ -138,7 +127,6 @@ marrier_makeup = st.number_input("How many marriers are getting makeup done?", m
 wp_hair = st.number_input("Wedding party hair services you're covering", min_value=0, value=0)
 wp_makeup = st.number_input("Wedding party makeup services you're covering", min_value=0, value=0)
 
-st.markdown("---")
 st.subheader("Step 2: Select Your Experience Priorities")
 
 goals = {
@@ -187,7 +175,6 @@ included_categories = categories.copy()
 if use_custom:
     included_categories = st.multiselect("Included Budget Categories", categories, default=categories)
 
-# --- Improved priority weightings to ensure top choices push values toward max ---
 priority_weights = {
     "Essential": {"top": [0.1, 0.3, 0.6], "mid": [0.6, 0.3, 0.1], "bottom": [1.0, 0.0, 0.0]},
     "Enhanced": {"top": [0.0, 0.3, 0.7], "mid": [0.3, 0.4, 0.3], "bottom": [0.8, 0.2, 0.0]},
@@ -263,8 +250,6 @@ for tier, weights in priority_weights.items():
     tier_totals[tier] = total
     budget_tiers[tier]["_goal_spend"] = goal_spend
 
-# --- Output ---
-st.markdown("---")
 st.header("Estimated Budgets")
 
 st.markdown("""
@@ -275,7 +260,6 @@ st.markdown("""
 > For the most accurate budgeting and guidance, we recommend reviewing your results with a planner who knows your region and priorities well.
 
 💡 *Intended couples planning a Vancouver Island wedding can [contact us](https://intendedevents.ca/pages/contact-us) for a consultation or [follow us on Instagram](https://instagram.com/intendedevents) for more planning advice and inspiration.*
-""")
 for tier in ["Essential", "Enhanced", "Elevated"]:
     st.subheader(f"{tier} Budget")
     st.write(f"Total: ${tier_totals[tier]:,} | Per Guest: ${tier_totals[tier] // guest_count:,}/guest")
@@ -348,4 +332,3 @@ We’re cheering you on from here 💛
 📸 [Follow on Instagram](https://instagram.com/intendedevents)
 
 > This budget calculator is a conversation starter, not a final quote. Pricing may vary depending on your venue, vendor selections, region, and personal style.
-""")
