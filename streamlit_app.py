@@ -180,7 +180,8 @@ for tier in ["Essential", "Enhanced", "Elevated"]:
     excluded = [cat for cat in df.index if cat not in included_categories]
     for cat in excluded:
         df.rename(index={cat: f"⚪ {cat}"}, inplace=True)
-    df = df.drop("_goal_spend")
+    if "_goal_spend" in df.index:
+        df = df.drop("_goal_spend")
     styled = df.style.format("${:,.0f}")
     
     st.dataframe(styled)
