@@ -44,26 +44,24 @@ categories = [
     "Other (Signage, Stationery, Gifts, Favours, etc.)"
 ]
 
-base_costs = {
-    "Officiant": [150, 600, 1500],
-    "Ceremony Decor, Rentals, and AV": [500, 3000, 6000],
-    "Venues (your event's backdrop & setting)": [2000, 7000, 20000],
-    "Decor & Rentals (Furniture, decor, tent, etc.)": [2500, 4500, 8000],  # Tent add-on applied separately
-    "Floral Design": [0, 0, 0],  # Dynamically calculated per guest below
-    "Music/Entertainment (DJ, Band, Photobooth, etc.)": [2000, 3500, 6000],
-    "Photography": [3000, 4500, 7000],
-    "Videography": [2000, 3000, 5000],
-    "Hair & Makeup": [1000, 1500, 2500],
-    "Personal Florals (Bouquets, Boutonnieres, Crowns, etc.)": [800, 1500, 2500],
-    "Wedding Attire": [2500, 6350, 12600],
-    "Food": [10400, 15600, 27000],
-    "Beverage": [4200, 6700, 13000],
-    "Stationery": [0, 0, 0],  # Calculated per guest
-    "Transportation": [800, 1800, 3000],
-    "Planning Support": [1500, 2500, 4500],
-    "Event Management": [1000, 2000, 3000],
-    "Design Services": [1500, 3000, 6000],
-    "Other (Signage, Stationery, Gifts, Favours, etc.)": [1200, 2500, 4500]
+# --- Minimum base charges to prevent underestimating fixed-cost categories ---
+category_minimums = {
+    "Officiant": 150,
+    "Ceremony Decor, Rentals, and AV": 500,
+    "Venues (your event's backdrop & setting)": 2000,
+    "Decor & Rentals (Furniture, decor, tent, etc.)": 1500,
+    "Photography": 1500,
+    "Videography": 1000,
+    "Hair & Makeup": 400,
+    "Personal Florals (Bouquets, Boutonnieres, Crowns, etc.)": 400,
+    "Food": 3000,
+    "Beverage": 1000,
+    "Stationery": 300,
+    "Transportation": 300,
+    "Planning Support": 1500,
+    "Event Management": 1000,
+    "Design Services": 1000,
+    "Other (Signage, Stationery, Gifts, Favours, etc.)": 300
 }
 
 # --- Inputs & Priorities ---
@@ -124,10 +122,11 @@ included_categories = categories.copy()
 if use_custom:
     included_categories = st.multiselect("Included Budget Categories", categories, default=categories)
 
+# --- Improved priority weightings to ensure top choices push values toward max ---
 priority_weights = {
-    "Essential": {"top": [0.6, 0.4, 0.0], "mid": [0.8, 0.2, 0.0], "bottom": [1.0, 0.0, 0.0]},
-    "Enhanced": {"top": [0.3, 0.7, 0.0], "mid": [0.0, 0.5, 0.5], "bottom": [0.8, 0.2, 0.0]},
-    "Elevated": {"top": [0.0, 0.1, 0.9], "mid": [0.0, 0.2, 0.8], "bottom": [0.5, 0.5, 0.0]}
+    "Essential": {"top": [0.2, 0.3, 0.5], "mid": [0.6, 0.3, 0.1], "bottom": [1.0, 0.0, 0.0]},
+    "Enhanced": {"top": [0.0, 0.3, 0.7], "mid": [0.3, 0.4, 0.3], "bottom": [0.8, 0.2, 0.0]},
+    "Elevated": {"top": [0.0, 0.1, 0.9], "mid": [0.2, 0.3, 0.5], "bottom": [0.5, 0.4, 0.1]}
 }
 
 scaling_factor = guest_count / 100
@@ -168,6 +167,9 @@ for tier, weights in priority_weights.items():
 
         w = weights[category_priorities[cat]]
         value = (g * w[0] + b * w[1] + bst * w[2]) * scaling_factor
+
+        if cat in category_minimums and cat in included_categories:
+    value = max(value, category_minimums[cat])
 
         if cat == "Decor & Rentals (Furniture, decor, tent, etc.)" and tent_needed:
             sqft = guest_count * 12.5
