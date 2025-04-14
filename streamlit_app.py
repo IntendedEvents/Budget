@@ -30,7 +30,6 @@ st.info("""
 # --- Input layout using columns ---
 col1, col2 = st.columns(2)
 with col1:
-    venue_type = st.radio("What type of venue are you considering?", [
         "Private Property",
         "Standard Venue",
         "Luxury/Hotel Venue"
@@ -112,6 +111,7 @@ base_costs = {
     "Other (Signage, Stationery, Gifts, Favours, etc.)": [1200, 2500, 4500]
 }
 
+    venue_type = st.radio("What type of venue are you considering?", [
 # --- Venue Cost Logic by Type ---
 if venue_type == "Private Property":
     base_costs["Venues (your event's backdrop & setting)"] = [1000, 3000, 6000]
