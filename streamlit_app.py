@@ -185,7 +185,7 @@ Take your results and review them with your wedding planner or someone with expe
 
 If you're planning a **Vancouver Island wedding**, this tool was created with *you* in mind — whether you're dreaming of forest elopements, coastal celebrations, or backyard parties with your people.
 
-We are cheering you on from here 💛
+We are cheering you on from here!
 
 📬 [Contact Us](https://intendedevents.ca/pages/contact-us)  
 📸 [Follow on Instagram](https://instagram.com/intendedevents)
