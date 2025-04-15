@@ -283,15 +283,15 @@ budget_tiers[tier]["_goal_spend"] = goal_spend
 st.markdown("---")
 st.header("Estimated Budgets")
 
-st.markdown("""
+st.markdown(r"""
 ---
-
 > This calculator is designed to support weddings with **guest counts of 30–200** and budgets ranging from **$20,000–$100,000+**. It is not optimized for elopements, ultra-luxury weddings, or micro-celebrations with unique requirements.
 
 > For the most accurate budgeting and guidance, we recommend reviewing your results with a planner who knows your region and priorities well.
 
 💡 *Intended couples planning a Vancouver Island wedding can [contact us](https://intendedevents.ca/pages/contact-us) for a consultation or [follow us on Instagram](https://instagram.com/intendedevents) for more planning advice and inspiration.*
 """)
+
 for tier in ["Essential", "Enhanced", "Elevated"]:
     st.subheader(f"{tier} Budget")
     st.write(f"Total: ${tier_totals[tier]:,} | Per Guest: ${tier_totals[tier] // guest_count:,}/guest")
