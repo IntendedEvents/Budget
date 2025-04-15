@@ -218,11 +218,11 @@ for tier, weights in priority_weights.items():
                 focal_point_unit = 1500
 
 # If reusing aisle markers, subtract from table count
-adjusted_table_count = max(0, table_count - row_count) if reuse_aisle_as_centrepieces else table_count
+                adjusted_table_count = max(0, table_count - row_count) if reuse_aisle_as_centrepieces else table_count
 
-g = adjusted_table_count * centrepiece_cost[0] + row_count * aisle_marker_cost[0] + focal_point_count * focal_point_unit
-b = adjusted_table_count * centrepiece_cost[1] + row_count * aisle_marker_cost[1] + focal_point_count * focal_point_unit
-bst = adjusted_table_count * centrepiece_cost[2] + row_count * aisle_marker_cost[2] + focal_point_count * focal_point_unit
+                g = adjusted_table_count * centrepiece_cost[0] + row_count * aisle_marker_cost[0] + focal_point_count * focal_point_unit
+                b = adjusted_table_count * centrepiece_cost[1] + row_count * aisle_marker_cost[1] + focal_point_count * focal_point_unit
+                bst = adjusted_table_count * centrepiece_cost[2] + row_count * aisle_marker_cost[2] + focal_point_count * focal_point_unit
 
         elif cat == "Venues (your event's backdrop & setting)":
             if venue_type == "At Home Wedding":
