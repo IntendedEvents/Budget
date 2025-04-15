@@ -224,57 +224,57 @@ if cat == "Floral Design":
     b = adjusted_table_count * centrepiece_cost[1] + row_count * aisle_marker_cost[1] + focal_point_count * focal_point_unit
     bst = adjusted_table_count * centrepiece_cost[2] + row_count * aisle_marker_cost[2] + focal_point_count * focal_point_unit
 
-        elif cat == "Venues (your event's backdrop & setting)":
-            if venue_type == "At Home Wedding":
-                min_val, avg_val, max_val = 0, 2000, 4000
-            elif venue_type == "Standard Venue":
-                min_val, avg_val, max_val = 5000, 8000, 12000
-            else:  # Luxury Venue/Hotel
-                min_val, avg_val, max_val = 9000, 14000, 20000
-        elif cat == "Stationery":
-            g, b, bst = guest_count * 10, guest_count * 20, guest_count * 35
-        elif cat == "Officiant":
-            if category_priorities[cat] == "top":
-                g, b, bst = 600, 1200, 1500
-            elif category_priorities[cat] == "mid":
-                g, b, bst = 500, 500, 1200
-            else:  # bottom priority
-                g, b, bst = 150, 150, 150
+elif cat == "Venues (your event's backdrop & setting)":
+    if venue_type == "At Home Wedding":
+        min_val, avg_val, max_val = 0, 2000, 4000
+    elif venue_type == "Standard Venue":
+        min_val, avg_val, max_val = 5000, 8000, 12000
+    else:  # Luxury Venue/Hotel
+        min_val, avg_val, max_val = 9000, 14000, 20000
+elif cat == "Stationery":
+    g, b, bst = guest_count * 10, guest_count * 20, guest_count * 35
+elif cat == "Officiant":
+    if category_priorities[cat] == "top":
+        g, b, bst = 600, 1200, 1500
+    elif category_priorities[cat] == "mid":
+        g, b, bst = 500, 500, 1200
+    else:  # bottom priority
+        g, b, bst = 150, 150, 150
+    else:
+        g, b, bst = base_costs[cat]
+
+    w = weights[category_priorities[cat]]
+    value = (g * w[0] + b * w[1] + bst * w[2]) * scaling_factor
+
+    if cat in category_minimums and cat in included_categories:
+        value = max(value, category_minimums[cat])
+
+    if cat == "Decor & Rentals (Furniture, decor, tent, etc.)" and tent_needed:
+        sqft = guest_count * 12.5
+        if sqft <= 800:
+            base_tent_cost = 2500
+        elif sqft <= 1500:
+            base_tent_cost = 5000
+        elif sqft <= 2500:
+            base_tent_cost = 6500
         else:
-            g, b, bst = base_costs[cat]
+            base_tent_cost = 8000
 
-        w = weights[category_priorities[cat]]
-        value = (g * w[0] + b * w[1] + bst * w[2]) * scaling_factor
+        if category_priorities[cat] == "top":
+            base_tent_cost += 3000
 
-        if cat in category_minimums and cat in included_categories:
-            value = max(value, category_minimums[cat])
-
-        if cat == "Decor & Rentals (Furniture, decor, tent, etc.)" and tent_needed:
-            sqft = guest_count * 12.5
-            if sqft <= 800:
-                base_tent_cost = 2500
-            elif sqft <= 1500:
-                base_tent_cost = 5000
-            elif sqft <= 2500:
-                base_tent_cost = 6500
-            else:
-                base_tent_cost = 8000
-
-            if category_priorities[cat] == "top":
-                base_tent_cost += 3000
-
-            value += base_tent_cost
-        if cat == "Hair & Makeup":
-            value += (marrier_hair + wp_hair + marrier_makeup + wp_makeup) * 200
-        if cat == "Wedding Attire":
-            value += dresses * 250 + suits * 200
-        value = round(value)
-        budget_tiers[tier][cat] = value
-        total += value
-        for goal in category_to_goals.get(cat, []):
-            goal_spend[goal] += value
-    tier_totals[tier] = total
-    budget_tiers[tier]["_goal_spend"] = goal_spend
+        value += base_tent_cost
+    if cat == "Hair & Makeup":
+        value += (marrier_hair + wp_hair + marrier_makeup + wp_makeup) * 200
+    if cat == "Wedding Attire":
+        value += dresses * 250 + suits * 200
+    value = round(value)
+    budget_tiers[tier][cat] = value
+    total += value
+    for goal in category_to_goals.get(cat, []):
+        goal_spend[goal] += value
+tier_totals[tier] = total
+budget_tiers[tier]["_goal_spend"] = goal_spend
 
 # --- Output ---
 st.markdown("---")
