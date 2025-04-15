@@ -208,7 +208,7 @@ if cat == "Floral Design":
         centrepiece_cost = [50, 150, 300]
         aisle_marker_cost = [50, 100, 150]
         focal_point_unit = 300
-elif floral_level == "Medium":
+    elif floral_level == "Medium":
         centrepiece_cost = [100, 350, 600]
         aisle_marker_cost = [100, 250, 400]
         focal_point_unit = 800
