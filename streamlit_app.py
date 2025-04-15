@@ -176,7 +176,7 @@ priority_weights = {
 
 scaling_factor = guest_count / 100
 budget_tiers = {tier: {} for tier in priority_weights}
-tier_totals = {}
+tier_totals = {tier: 0 for tier in priority_weights}
 category_priorities = {}
 
 # Tent toggle
@@ -192,8 +192,11 @@ for cat in categories:
         category_priorities[cat] = "mid"
 
 for tier, weights in priority_weights.items():
+    try:
     total = 0
     goal_spend = {goal: 0 for goal in goals}
+    except Exception as e:
+        st.warning(f"Something went wrong in the {tier} tier: {e}")
     for cat in categories:
         if cat not in included_categories:
             budget_tiers[tier][cat] = 0
