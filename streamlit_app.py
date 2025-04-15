@@ -305,7 +305,7 @@ for tier in ["Essential", "Enhanced", "Elevated"]:
 
     # Drop hidden row safely
     if "_goal_spend" in df.index:
-    df = df.drop("_goal_spend")
+        df = df.drop("_goal_spend")
 
     try:
     styled = df.style.format("${:,.0f}")
