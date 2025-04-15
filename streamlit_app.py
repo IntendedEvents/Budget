@@ -198,31 +198,31 @@ for tier, weights in priority_weights.items():
         if cat not in included_categories:
             budget_tiers[tier][cat] = 0
             continue
-                # Custom logic for Floral Design, Stationery, Tent
-        if cat == "Floral Design":
-            table_count = guest_count / 8
-            row_count = int(np.ceil(guest_count / 6))  # rows for aisle markers
-            focal_point_count = {"Essential": 1, "Enhanced": 2, "Elevated": 3}[tier]
+# Custom logic for Floral Design, Stationery, Tent
+if cat == "Floral Design":
+    table_count = guest_count / 8
+    row_count = int(np.ceil(guest_count / 6))  # rows for aisle markers
+    focal_point_count = {"Essential": 1, "Enhanced": 2, "Elevated": 3}[tier]
 
-            if floral_level == "Minimal":
-                centrepiece_cost = [50, 150, 300]
-                aisle_marker_cost = [50, 100, 150]
-                focal_point_unit = 300
-            elif floral_level == "Medium":
-                centrepiece_cost = [100, 350, 600]
-                aisle_marker_cost = [100, 250, 400]
-                focal_point_unit = 800
-            else:  # Lush
-                centrepiece_cost = [200, 500, 800]
-                aisle_marker_cost = [200, 500, 800]
-                focal_point_unit = 1500
+    if floral_level == "Minimal":
+        centrepiece_cost = [50, 150, 300]
+        aisle_marker_cost = [50, 100, 150]
+        focal_point_unit = 300
+    elif floral_level == "Medium":
+        centrepiece_cost = [100, 350, 600]
+        aisle_marker_cost = [100, 250, 400]
+        focal_point_unit = 800
+    else:  # Lush
+        centrepiece_cost = [200, 500, 800]
+        aisle_marker_cost = [200, 500, 800]
+        focal_point_unit = 1500
 
-# If reusing aisle markers, subtract from table count
-                adjusted_table_count = max(0, table_count - row_count) if reuse_aisle_as_centrepieces else table_count
+    # This was the issue — it needs to be OUTSIDE the `else:` block!
+    adjusted_table_count = max(0, table_count - row_count) if reuse_aisle_as_centrepieces else table_count
 
-                g = adjusted_table_count * centrepiece_cost[0] + row_count * aisle_marker_cost[0] + focal_point_count * focal_point_unit
-                b = adjusted_table_count * centrepiece_cost[1] + row_count * aisle_marker_cost[1] + focal_point_count * focal_point_unit
-                bst = adjusted_table_count * centrepiece_cost[2] + row_count * aisle_marker_cost[2] + focal_point_count * focal_point_unit
+    g = adjusted_table_count * centrepiece_cost[0] + row_count * aisle_marker_cost[0] + focal_point_count * focal_point_unit
+    b = adjusted_table_count * centrepiece_cost[1] + row_count * aisle_marker_cost[1] + focal_point_count * focal_point_unit
+    bst = adjusted_table_count * centrepiece_cost[2] + row_count * aisle_marker_cost[2] + focal_point_count * focal_point_unit
 
         elif cat == "Venues (your event's backdrop & setting)":
             if venue_type == "At Home Wedding":
