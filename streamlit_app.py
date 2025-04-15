@@ -188,14 +188,27 @@ for tier, weights in priority_weights.items():
             continue
                 # Custom logic for Floral Design, Stationery, Tent
         if cat == "Floral Design":
-            count = guest_count / 8
+            table_count = guest_count / 8
+            row_count = int(np.ceil(guest_count / 12))  # rows for aisle markers
+            focal_point_count = {"Essential": 1, "Enhanced": 2, "Elevated": 3}[tier]
+
             if floral_level == "Minimal":
-                min_val, avg_val, max_val = 50 * count, 150 * count, 300 * count
+                centrepiece_cost = [50, 150, 300]
+                aisle_marker_cost = [50, 150, 300]
+                focal_point_unit = 300
             elif floral_level == "Medium":
-                min_val, avg_val, max_val = 100 * count, 350 * count, 600 * count
+                centrepiece_cost = [100, 350, 600]
+                aisle_marker_cost = [100, 350, 600]
+                focal_point_unit = 800
             else:  # Lush
-                min_val, avg_val, max_val = 200 * count, 500 * count, 800 * count
-            g, b, bst = min_val, avg_val, max_val
+                centrepiece_cost = [200, 500, 800]
+                aisle_marker_cost = [200, 500, 800]
+                focal_point_unit = 1500
+
+            g = table_count * centrepiece_cost[0] + row_count * aisle_marker_cost[0] + focal_point_count * focal_point_unit
+            b = table_count * centrepiece_cost[1] + row_count * aisle_marker_cost[1] + focal_point_count * focal_point_unit
+            bst = table_count * centrepiece_cost[2] + row_count * aisle_marker_cost[2] + focal_point_count * focal_point_unit
+
         elif cat == "Venues (your event's backdrop & setting)":
             if venue_type == "At Home Wedding":
                 min_val, avg_val, max_val = 2000, 4000, 7000
@@ -205,6 +218,13 @@ for tier, weights in priority_weights.items():
                 min_val, avg_val, max_val = 9000, 14000, 20000
         elif cat == "Stationery":
             g, b, bst = guest_count * 10, guest_count * 20, guest_count * 35
+        elif cat == "Officiant":
+            if category_priorities[cat] == "top":
+                g, b, bst = 600, 1000, 1500
+            elif category_priorities[cat] == "mid":
+                g, b, bst = 300, 600, 1000
+            else:  # bottom priority
+                g, b, bst = 150, 150, 300
         else:
             g, b, bst = base_costs[cat]
 
