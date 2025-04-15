@@ -48,9 +48,9 @@ base_costs = {
     "Officiant": [150, 600, 1500],
     "Ceremony Decor, Rentals, and AV": [500, 3000, 6000],
     "Venues (your event's backdrop & setting)": [2000, 7000, 20000],
-    "Decor & Rentals (Furniture, decor, tent, etc.)": [2500, 4500, 8000],  # Tent logic handled separately
+    "Decor & Rentals (Furniture, decor, tent, etc.)": [1200, 4000, 8000],  # Tent logic handled separately
     "Floral Design": [0, 0, 0],  # Calculated based on guest count below
-    "Music/Entertainment (DJ, Band, Photobooth, etc.)": [2000, 3500, 6000],
+    "Music/Entertainment (DJ, Band, Photobooth, etc.)": [500, 3500, 6000],
     "Photography": [3000, 4500, 8000],
     "Videography": [2000, 5000, 8000],
     "Hair & Makeup": [1000, 1500, 2500],
@@ -155,11 +155,22 @@ floral_level = st.selectbox("How lush are your floral plans?", [
     "Minimal", "Medium", "Lush"
 ])
 
-# --- Improved priority weightings to ensure top choices push values toward max ---
 priority_weights = {
-    "Essential": {"top": [0.1, 0.3, 0.6], "mid": [0.6, 0.3, 0.1], "bottom": [1.0, 0.0, 0.0]},
-    "Enhanced": {"top": [0.0, 0.3, 0.7], "mid": [0.3, 0.4, 0.3], "bottom": [0.8, 0.2, 0.0]},
-    "Elevated": {"top": [0.0, 0.1, 0.9], "mid": [0.2, 0.3, 0.5], "bottom": [0.5, 0.4, 0.1]}
+    "Essential": {
+        "top": [0.2, 0.5, 0.3],
+        "mid": [0.8, 0.2, 0.0],
+        "bottom": [1.0, 0.0, 0.0]
+    },
+    "Enhanced": {
+        "top": [0.0, 0.3, 0.7],
+        "mid": [0.3, 0.4, 0.3],
+        "bottom": [0.8, 0.2, 0.0]
+    },
+    "Elevated": {
+        "top": [0.0, 0.1, 0.9],
+        "mid": [0.2, 0.3, 0.5],
+        "bottom": [0.5, 0.4, 0.1]
+    }
 }
 
 scaling_factor = guest_count / 100
@@ -189,16 +200,16 @@ for tier, weights in priority_weights.items():
                 # Custom logic for Floral Design, Stationery, Tent
         if cat == "Floral Design":
             table_count = guest_count / 8
-            row_count = int(np.ceil(guest_count / 12))  # rows for aisle markers
+            row_count = int(np.ceil(guest_count / 6))  # rows for aisle markers
             focal_point_count = {"Essential": 1, "Enhanced": 2, "Elevated": 3}[tier]
 
             if floral_level == "Minimal":
                 centrepiece_cost = [50, 150, 300]
-                aisle_marker_cost = [50, 150, 300]
+                aisle_marker_cost = [50, 100, 150]
                 focal_point_unit = 300
             elif floral_level == "Medium":
                 centrepiece_cost = [100, 350, 600]
-                aisle_marker_cost = [100, 350, 600]
+                aisle_marker_cost = [100, 250, 400]
                 focal_point_unit = 800
             else:  # Lush
                 centrepiece_cost = [200, 500, 800]
@@ -211,7 +222,7 @@ for tier, weights in priority_weights.items():
 
         elif cat == "Venues (your event's backdrop & setting)":
             if venue_type == "At Home Wedding":
-                min_val, avg_val, max_val = 2000, 4000, 7000
+                min_val, avg_val, max_val = 0, 2000, 4000
             elif venue_type == "Standard Venue":
                 min_val, avg_val, max_val = 5000, 8000, 12000
             else:  # Luxury Venue/Hotel
@@ -220,11 +231,11 @@ for tier, weights in priority_weights.items():
             g, b, bst = guest_count * 10, guest_count * 20, guest_count * 35
         elif cat == "Officiant":
             if category_priorities[cat] == "top":
-                g, b, bst = 600, 1000, 1500
+                g, b, bst = 600, 1200, 1500
             elif category_priorities[cat] == "mid":
-                g, b, bst = 300, 600, 1000
+                g, b, bst = 500, 500, 1200
             else:  # bottom priority
-                g, b, bst = 150, 150, 300
+                g, b, bst = 150, 150, 150
         else:
             g, b, bst = base_costs[cat]
 
@@ -250,7 +261,7 @@ for tier, weights in priority_weights.items():
 
             value += base_tent_cost
         if cat == "Hair & Makeup":
-            value += (marrier_hair + wp_hair + marrier_makeup + wp_makeup) * 100
+            value += (marrier_hair + wp_hair + marrier_makeup + wp_makeup) * 200
         if cat == "Wedding Attire":
             value += dresses * 250 + suits * 200
         value = round(value)
