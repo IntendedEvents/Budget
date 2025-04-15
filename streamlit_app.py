@@ -240,8 +240,8 @@ elif cat == "Officiant":
         g, b, bst = 500, 500, 1200
     else:  # bottom priority
         g, b, bst = 150, 150, 150
-    else:
-        g, b, bst = base_costs[cat]
+else:
+    g, b, bst = base_costs[cat]
 
     w = weights[category_priorities[cat]]
     value = (g * w[0] + b * w[1] + bst * w[2]) * scaling_factor
