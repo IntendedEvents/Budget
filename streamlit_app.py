@@ -292,9 +292,9 @@ st.markdown("""
 for tier in ["Essential", "Enhanced", "Elevated"]:
     st.subheader(f"{tier} Budget")
     if tier in tier_totals and tier_totals[tier] > 0:
-    st.write(f"Total: ${tier_totals[tier]:,} | Per Guest: ${tier_totals[tier] // guest_count:,}/guest")
-else:
-    st.warning(f"No budget data available for the {tier} tier.")
+        st.write(f"Total: ${tier_totals[tier]:,} | Per Guest: ${tier_totals[tier] // guest_count:,}/guest")
+    else:
+        st.warning(f"No budget data available for the {tier} tier.")
     df = pd.DataFrame.from_dict(
         {k: v for k, v in budget_tiers[tier].items() if k != "_goal_spend"},
         orient='index',
