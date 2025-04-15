@@ -61,7 +61,7 @@ base_costs = {
     "Stationery": [0, 0, 0],  # Calculated based on guest count below
     "Transportation": [800, 1800, 3000],
     "Planning Support": [1500, 2500, 4500],
-    "Event Management": [1000, 2000, 3000],
+    "Event Management": [1500, 2500, 4000],
     "Design Services": [1500, 3000, 6000],
     "Other (Signage, Stationery, Gifts, Favours, etc.)": [1200, 2500, 4500]
 }
