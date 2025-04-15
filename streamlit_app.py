@@ -224,7 +224,7 @@ if cat == "Floral Design":
     b = adjusted_table_count * centrepiece_cost[1] + row_count * aisle_marker_cost[1] + focal_point_count * focal_point_unit
     bst = adjusted_table_count * centrepiece_cost[2] + row_count * aisle_marker_cost[2] + focal_point_count * focal_point_unit
 
-elif cat == "Venues (your event's backdrop & setting)":
+        elif cat == "Venues (your event's backdrop & setting)":
             if venue_type == "At Home Wedding":
                 min_val, avg_val, max_val = 0, 2000, 4000
             elif venue_type == "Standard Venue":
