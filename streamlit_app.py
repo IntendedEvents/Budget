@@ -176,7 +176,7 @@ priority_weights = {
 
 scaling_factor = guest_count / 100
 budget_tiers = {tier: {} for tier in priority_weights}
-tier_totals = {tier: 0 for tier in priority_weights}
+tier_totals = {}
 category_priorities = {}
 
 # Tent toggle
@@ -240,8 +240,8 @@ elif cat == "Officiant":
         g, b, bst = 500, 500, 1200
     else:  # bottom priority
         g, b, bst = 150, 150, 150
-else:
-    g, b, bst = base_costs[cat]
+    else:
+        g, b, bst = base_costs[cat]
 
     w = weights[category_priorities[cat]]
     value = (g * w[0] + b * w[1] + bst * w[2]) * scaling_factor
@@ -291,14 +291,11 @@ st.markdown("""
 """)
 for tier in ["Essential", "Enhanced", "Elevated"]:
     st.subheader(f"{tier} Budget")
-    if tier in tier_totals and tier_totals[tier] > 0:
-        st.write(f"Total: ${tier_totals[tier]:,} | Per Guest: ${tier_totals[tier] // guest_count:,}/guest")
-    else:
-        st.warning(f"No budget data available for the {tier} tier.")
+    st.write(f"Total: ${tier_totals[tier]:,} | Per Guest: ${tier_totals[tier] // guest_count:,}/guest")
     df = pd.DataFrame.from_dict(
-        {k: v for k, v in budget_tiers[tier].items() if k != "_goal_spend"},
-        orient='index',
-        columns=['Amount']
+    {k: v for k, v in budget_tiers[tier].items() if k != "_goal_spend"},
+    orient='index',
+    columns=['Amount']
     )
 
     # Handle excluded categories visually and map for styling
@@ -308,23 +305,23 @@ for tier in ["Essential", "Enhanced", "Elevated"]:
 
     # Drop hidden row safely
     if "_goal_spend" in df.index:
-        df = df.drop("_goal_spend")
+    df = df.drop("_goal_spend")
 
     try:
-        styled = df.style.format("${:,.0f}")
-        st.dataframe(styled)
+    styled = df.style.format("${:,.0f}")
+    st.dataframe(styled)
     except Exception as e:
-        st.warning("Couldn't format the table with styling. Showing raw values instead.")
-        st.dataframe(df)
+    st.warning("Couldn't format the table with styling. Showing raw values instead.")
+    st.dataframe(df)
 
     chart = px.pie(
-        df[df["Amount"] > 0].reset_index(),
-        names='index',
-        values='Amount',
-        title=f"{tier} Budget Breakdown",
-        color_discrete_sequence=[
-            "#2e504c", "#c8a566", "#9bb7be", "#dad0af", "#477485", "#dee5e3", "#ffffff"
-        ]
+    df[df["Amount"] > 0].reset_index(),
+    names='index',
+    values='Amount',
+    title=f"{tier} Budget Breakdown",
+    color_discrete_sequence=[
+    "#2e504c", "#c8a566", "#9bb7be", "#dad0af", "#477485", "#dee5e3", "#ffffff"
+    ]
     )
     st.plotly_chart(chart)
 
@@ -336,7 +333,7 @@ for tier in ["Essential", "Enhanced", "Elevated"]:
     st.dataframe(goal_df.style.format({"Amount": "${:,.0f}", "Percent": "{:.1f}%"}))
 
     summary = f"{tier} Wedding Budget Estimate\nTotal: ${tier_totals[tier]:,}\nPer Guest: ${tier_totals[tier] // guest_count:,}\n\nBreakdown:\n" + \
-             "\n".join([f"{k}: ${v:,}" for k, v in df["Amount"].items()])
+    "\n".join([f"{k}: ${v:,}" for k, v in df["Amount"].items()])
     st.text_area(f"{tier} Summary:", summary, height=300)
 
 if tier == "Elevated":
