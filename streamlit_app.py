@@ -61,7 +61,7 @@ base_costs = {
     "Stationery": [0, 0, 0],  # Calculated based on guest count below
     "Transportation": [800, 1800, 3000],
     "Planning Support": [1500, 2500, 4500],
-    "Event Management": [1500, 2500, 4000],
+    "Event Management": [1000, 2000, 3000],
     "Design Services": [1500, 3000, 6000],
     "Other (Signage, Stationery, Gifts, Favours, etc.)": [1200, 2500, 4500]
 }
@@ -154,7 +154,6 @@ venue_type = st.selectbox("What kind of venue are you planning?", [
 floral_level = st.selectbox("How lush are your floral plans?", [
     "Minimal", "Medium", "Lush"
 ])
-reuse_aisle_as_centrepieces = st.checkbox("Reusing your aisle markers as table centrepieces?")
 
 priority_weights = {
     "Essential": {
@@ -176,7 +175,7 @@ priority_weights = {
 
 scaling_factor = guest_count / 100
 budget_tiers = {tier: {} for tier in priority_weights}
-tier_totals = {tier: 0 for tier in priority_weights}
+tier_totals = {}
 category_priorities = {}
 
 # Tent toggle
@@ -192,113 +191,107 @@ for cat in categories:
         category_priorities[cat] = "mid"
 
 for tier, weights in priority_weights.items():
-    try:
     total = 0
     goal_spend = {goal: 0 for goal in goals}
-    except Exception as e:
-        st.warning(f"Something went wrong in the {tier} tier: {e}")
     for cat in categories:
         if cat not in included_categories:
             budget_tiers[tier][cat] = 0
             continue
-# Custom logic for Floral Design, Stationery, Tent
-if cat == "Floral Design":
-    table_count = guest_count / 8
-    row_count = int(np.ceil(guest_count / 6))  # rows for aisle markers
-    focal_point_count = {"Essential": 1, "Enhanced": 2, "Elevated": 3}[tier]
+                # Custom logic for Floral Design, Stationery, Tent
+        if cat == "Floral Design":
+            table_count = guest_count / 8
+            row_count = int(np.ceil(guest_count / 6))  # rows for aisle markers
+            focal_point_count = {"Essential": 1, "Enhanced": 2, "Elevated": 3}[tier]
 
-    if floral_level == "Minimal":
-        centrepiece_cost = [50, 150, 300]
-        aisle_marker_cost = [50, 100, 150]
-        focal_point_unit = 300
-    elif floral_level == "Medium":
-        centrepiece_cost = [100, 350, 600]
-        aisle_marker_cost = [100, 250, 400]
-        focal_point_unit = 800
-    else:  # Lush
-        centrepiece_cost = [200, 500, 800]
-        aisle_marker_cost = [200, 500, 800]
-        focal_point_unit = 1500
+            if floral_level == "Minimal":
+                centrepiece_cost = [50, 150, 300]
+                aisle_marker_cost = [50, 100, 150]
+                focal_point_unit = 300
+            elif floral_level == "Medium":
+                centrepiece_cost = [100, 350, 600]
+                aisle_marker_cost = [100, 250, 400]
+                focal_point_unit = 800
+            else:  # Lush
+                centrepiece_cost = [200, 500, 800]
+                aisle_marker_cost = [200, 500, 800]
+                focal_point_unit = 1500
 
-    # This was the issue — it needs to be OUTSIDE the `else:` block!
-    adjusted_table_count = max(0, table_count - row_count) if reuse_aisle_as_centrepieces else table_count
+            g = table_count * centrepiece_cost[0] + row_count * aisle_marker_cost[0] + focal_point_count * focal_point_unit
+            b = table_count * centrepiece_cost[1] + row_count * aisle_marker_cost[1] + focal_point_count * focal_point_unit
+            bst = table_count * centrepiece_cost[2] + row_count * aisle_marker_cost[2] + focal_point_count * focal_point_unit
 
-    g = adjusted_table_count * centrepiece_cost[0] + row_count * aisle_marker_cost[0] + focal_point_count * focal_point_unit
-    b = adjusted_table_count * centrepiece_cost[1] + row_count * aisle_marker_cost[1] + focal_point_count * focal_point_unit
-    bst = adjusted_table_count * centrepiece_cost[2] + row_count * aisle_marker_cost[2] + focal_point_count * focal_point_unit
-
-elif cat == "Venues (your event's backdrop & setting)":
-    if venue_type == "At Home Wedding":
-        min_val, avg_val, max_val = 0, 2000, 4000
-    elif venue_type == "Standard Venue":
-        min_val, avg_val, max_val = 5000, 8000, 12000
-    else:  # Luxury Venue/Hotel
-        min_val, avg_val, max_val = 9000, 14000, 20000
-elif cat == "Stationery":
-    g, b, bst = guest_count * 10, guest_count * 20, guest_count * 35
-elif cat == "Officiant":
-    if category_priorities[cat] == "top":
-        g, b, bst = 600, 1200, 1500
-    elif category_priorities[cat] == "mid":
-        g, b, bst = 500, 500, 1200
-    else:  # bottom priority
-        g, b, bst = 150, 150, 150
-else:
-    g, b, bst = base_costs[cat]
-
-    w = weights[category_priorities[cat]]
-    value = (g * w[0] + b * w[1] + bst * w[2]) * scaling_factor
-
-    if cat in category_minimums and cat in included_categories:
-        value = max(value, category_minimums[cat])
-
-    if cat == "Decor & Rentals (Furniture, decor, tent, etc.)" and tent_needed:
-        sqft = guest_count * 12.5
-        if sqft <= 800:
-            base_tent_cost = 2500
-        elif sqft <= 1500:
-            base_tent_cost = 5000
-        elif sqft <= 2500:
-            base_tent_cost = 6500
+        elif cat == "Venues (your event's backdrop & setting)":
+            if venue_type == "At Home Wedding":
+                min_val, avg_val, max_val = 0, 2000, 4000
+            elif venue_type == "Standard Venue":
+                min_val, avg_val, max_val = 5000, 8000, 12000
+            else:  # Luxury Venue/Hotel
+                min_val, avg_val, max_val = 9000, 14000, 20000
+        elif cat == "Stationery":
+            g, b, bst = guest_count * 10, guest_count * 20, guest_count * 35
+        elif cat == "Officiant":
+            if category_priorities[cat] == "top":
+                g, b, bst = 600, 1200, 1500
+            elif category_priorities[cat] == "mid":
+                g, b, bst = 500, 500, 1200
+            else:  # bottom priority
+                g, b, bst = 150, 150, 150
         else:
-            base_tent_cost = 8000
+            g, b, bst = base_costs[cat]
 
-        if category_priorities[cat] == "top":
-            base_tent_cost += 3000
+        w = weights[category_priorities[cat]]
+        value = (g * w[0] + b * w[1] + bst * w[2]) * scaling_factor
 
-        value += base_tent_cost
-    if cat == "Hair & Makeup":
-        value += (marrier_hair + wp_hair + marrier_makeup + wp_makeup) * 200
-    if cat == "Wedding Attire":
-        value += dresses * 250 + suits * 200
-    value = round(value)
-    budget_tiers[tier][cat] = value
-    total += value
-    for goal in category_to_goals.get(cat, []):
-        goal_spend[goal] += value
-tier_totals[tier] = total
-budget_tiers[tier]["_goal_spend"] = goal_spend
+        if cat in category_minimums and cat in included_categories:
+            value = max(value, category_minimums[cat])
+
+        if cat == "Decor & Rentals (Furniture, decor, tent, etc.)" and tent_needed:
+            sqft = guest_count * 12.5
+            if sqft <= 800:
+                base_tent_cost = 2500
+            elif sqft <= 1500:
+                base_tent_cost = 5000
+            elif sqft <= 2500:
+                base_tent_cost = 6500
+            else:
+                base_tent_cost = 8000
+
+            if category_priorities[cat] == "top":
+                base_tent_cost += 3000
+
+            value += base_tent_cost
+        if cat == "Hair & Makeup":
+            value += (marrier_hair + wp_hair + marrier_makeup + wp_makeup) * 200
+        if cat == "Wedding Attire":
+            value += dresses * 250 + suits * 200
+        value = round(value)
+        budget_tiers[tier][cat] = value
+        total += value
+        for goal in category_to_goals.get(cat, []):
+            goal_spend[goal] += value
+    tier_totals[tier] = total
+    budget_tiers[tier]["_goal_spend"] = goal_spend
 
 # --- Output ---
 st.markdown("---")
 st.header("Estimated Budgets")
 
-st.markdown(r"""
+st.markdown("""
 ---
+
 > This calculator is designed to support weddings with **guest counts of 30–200** and budgets ranging from **$20,000–$100,000+**. It is not optimized for elopements, ultra-luxury weddings, or micro-celebrations with unique requirements.
 
 > For the most accurate budgeting and guidance, we recommend reviewing your results with a planner who knows your region and priorities well.
 
 💡 *Intended couples planning a Vancouver Island wedding can [contact us](https://intendedevents.ca/pages/contact-us) for a consultation or [follow us on Instagram](https://instagram.com/intendedevents) for more planning advice and inspiration.*
 """)
-
 for tier in ["Essential", "Enhanced", "Elevated"]:
     st.subheader(f"{tier} Budget")
     st.write(f"Total: ${tier_totals[tier]:,} | Per Guest: ${tier_totals[tier] // guest_count:,}/guest")
     df = pd.DataFrame.from_dict(
-    {k: v for k, v in budget_tiers[tier].items() if k != "_goal_spend"},
-    orient='index',
-    columns=['Amount']
+        {k: v for k, v in budget_tiers[tier].items() if k != "_goal_spend"},
+        orient='index',
+        columns=['Amount']
     )
 
     # Handle excluded categories visually and map for styling
@@ -318,13 +311,13 @@ for tier in ["Essential", "Enhanced", "Elevated"]:
         st.dataframe(df)
 
     chart = px.pie(
-    df[df["Amount"] > 0].reset_index(),
-    names='index',
-    values='Amount',
-    title=f"{tier} Budget Breakdown",
-    color_discrete_sequence=[
-    "#2e504c", "#c8a566", "#9bb7be", "#dad0af", "#477485", "#dee5e3", "#ffffff"
-    ]
+        df[df["Amount"] > 0].reset_index(),
+        names='index',
+        values='Amount',
+        title=f"{tier} Budget Breakdown",
+        color_discrete_sequence=[
+            "#2e504c", "#c8a566", "#9bb7be", "#dad0af", "#477485", "#dee5e3", "#ffffff"
+        ]
     )
     st.plotly_chart(chart)
 
@@ -336,7 +329,7 @@ for tier in ["Essential", "Enhanced", "Elevated"]:
     st.dataframe(goal_df.style.format({"Amount": "${:,.0f}", "Percent": "{:.1f}%"}))
 
     summary = f"{tier} Wedding Budget Estimate\nTotal: ${tier_totals[tier]:,}\nPer Guest: ${tier_totals[tier] // guest_count:,}\n\nBreakdown:\n" + \
-    "\n".join([f"{k}: ${v:,}" for k, v in df["Amount"].items()])
+             "\n".join([f"{k}: ${v:,}" for k, v in df["Amount"].items()])
     st.text_area(f"{tier} Summary:", summary, height=300)
 
 if tier == "Elevated":
