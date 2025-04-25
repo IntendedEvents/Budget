@@ -457,18 +457,16 @@ if st.session_state.current_step == 1:
     if st.session_state.wedding_date:
         discount = get_seasonal_discount(st.session_state.wedding_date)
         if discount > 0:
-            discount_message = []
+            reasons = []
             if st.session_state.wedding_date.month in [11, 12, 1, 2, 3]:
-                discount_message.append("off-season (November-March)")
+                reasons.append("off-season (November-March)")
             if st.session_state.wedding_date.weekday() == 6:
-                discount_message.append("Sunday")
+                reasons.append("Sunday")
             elif st.session_state.wedding_date.weekday() < 5:
-                discount_message.append("weekday")
+                reasons.append("weekday")
             
-            message = f"💰 Good news! You qualify for special pricing ({discount * 100:.0f}% off) for your "
-            message += " and ".join(discount_message)
-            message += " wedding!"
-            st.success(message)
+            message = f"💰 {discount * 100:.0f}% off has been applied based on potential {' and '.join(reasons)} savings"
+            st.info(message)
 
     if st.button("Next: Experience Priorities ➡️"):
         st.session_state.current_step = 2
@@ -937,8 +935,23 @@ elif st.session_state.current_step == 4:
                 pdf.chapter_title("Wedding Budget Summary")
                 pdf.chapter_body(f"Date: {st.session_state.wedding_date.strftime('%B %d, %Y')}")
                 pdf.chapter_body(f"Guest Count: {st.session_state.guest_count}")
+                
+                # Add pricing notes
                 if seasonal_discount > 0:
-                    pdf.chapter_body(f"Special Pricing Applied: {seasonal_discount * 100:.0f}% off")
+                    reasons = []
+                    if st.session_state.wedding_date.month in [11, 12, 1, 2, 3]:
+                        reasons.append("off-season (November-March)")
+                    if st.session_state.wedding_date.weekday() == 6:
+                        reasons.append("Sunday")
+                    elif st.session_state.wedding_date.weekday() < 5:
+                        reasons.append("weekday")
+                    pdf.chapter_body(f"Pricing Note: {seasonal_discount * 100:.0f}% off has been applied based on potential {' and '.join(reasons)} savings")
+                
+                # Add priorities
+                if st.session_state.top_3:
+                    pdf.chapter_body("\nTop Priorities:")
+                    for priority in st.session_state.top_3:
+                        pdf.chapter_body(f"• {priority}")
                 
                 # Add budget breakdown
                 pdf.add_page()
