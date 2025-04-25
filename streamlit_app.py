@@ -12,6 +12,55 @@ from io import BytesIO
 from fpdf import FPDF
 import calendar
 
+# --- State Management ---
+DEFAULT_VALUES = {
+    'current_step': 1,
+    'saved_scenarios': {},
+    'wedding_date': datetime.today(),
+    'guest_count': 100,
+    'dresses': 0,
+    'suits': 0,
+    'marrier_hair': 1,
+    'marrier_makeup': 1,
+    'wp_hair': 0,
+    'wp_makeup': 0,
+    'top_3': [],
+    'lowest': [],
+    'included_categories': None,  # Will be set after categories are defined
+    'venue_type': "Standard Venue",
+    'tent_needed': False,
+    'floral_level': "Medium",
+    'last_modified': datetime.now().isoformat()
+}
+
+def initialize_session_state():
+    """Initialize or reset session state with default values."""
+    for key, value in DEFAULT_VALUES.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+
+def reset_session_state():
+    """Reset all session state values to defaults."""
+    for key, value in DEFAULT_VALUES.items():
+        st.session_state[key] = value
+    st.session_state.last_modified = datetime.now().isoformat()
+
+def save_current_state():
+    """Save current state as a scenario."""
+    current_state = {
+        key: st.session_state[key] 
+        for key in DEFAULT_VALUES.keys() 
+        if key not in ['current_step', 'saved_scenarios']
+    }
+    return current_state
+
+def load_state(saved_state):
+    """Load a saved state into session state."""
+    for key, value in saved_state.items():
+        if key in DEFAULT_VALUES:
+            st.session_state[key] = value
+    st.session_state.last_modified = datetime.now().isoformat()
+
 # --- Pricing Adjustments ---
 def get_seasonal_discount(date):
     """Calculate seasonal discount based on month and day of week."""
@@ -65,12 +114,6 @@ class WeddingBudgetPDF(FPDF):
         self.multi_cell(0, 10, body)
         self.ln()
 
-# --- Initialize session state ---
-if 'current_step' not in st.session_state:
-    st.session_state.current_step = 1
-if 'saved_scenarios' not in st.session_state:
-    st.session_state.saved_scenarios = {}
-
 # --- Streamlit Config ---
 st.set_page_config(
     page_title="Vancouver Island Wedding Budget Estimator",
@@ -114,12 +157,55 @@ with st.sidebar:
         if st.button(f"Step {step}: {name}"):
             st.session_state.current_step = step
     
-    # Reset button
-    if st.button("🔄 Reset All Inputs"):
-        for key in st.session_state.keys():
-            if key not in ['current_step', 'saved_scenarios']:
-                del st.session_state[key]
-        st.success("All inputs have been reset!")
+    st.markdown("---")
+    
+    # Scenario Management
+    st.subheader("💾 Scenario Management")
+    
+    # Save current scenario
+    scenario_name = st.text_input("Scenario Name", "My Wedding Budget")
+    if st.button("Save Current Scenario"):
+        current_state = save_current_state()
+        st.session_state.saved_scenarios[scenario_name] = {
+            'date': datetime.now().isoformat(),
+            'state': current_state
+        }
+        st.success(f"Scenario '{scenario_name}' saved!")
+    
+    # Load saved scenario
+    if st.session_state.saved_scenarios:
+        st.markdown("### Load Saved Scenario")
+        scenario_to_load = st.selectbox(
+            "Select a scenario to load",
+            options=list(st.session_state.saved_scenarios.keys())
+        )
+        if st.button("Load Selected Scenario"):
+            saved_state = st.session_state.saved_scenarios[scenario_to_load]['state']
+            load_state(saved_state)
+            st.success(f"Loaded scenario: {scenario_to_load}")
+        
+        if st.button("Delete Selected Scenario"):
+            del st.session_state.saved_scenarios[scenario_to_load]
+            st.success(f"Deleted scenario: {scenario_to_load}")
+    
+    st.markdown("---")
+    
+    # Reset options
+    st.subheader("🔄 Reset Options")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Reset All"):
+            reset_session_state()
+            st.success("All inputs have been reset!")
+    with col2:
+        if st.button("Clear Scenarios"):
+            st.session_state.saved_scenarios = {}
+            st.success("All saved scenarios cleared!")
+
+    # Show last modified time
+    st.markdown("---")
+    last_modified = datetime.fromisoformat(st.session_state.last_modified)
+    st.caption(f"Last modified: {last_modified.strftime('%Y-%m-%d %H:%M:%S')}")
 
 # --- Header ---
 if os.path.exists("blk-MAIN.png"):
@@ -150,6 +236,12 @@ categories = [
     "Design Services",
     "Other (Signage, Stationery, Gifts, Favours, etc.)"
 ]
+
+# Update DEFAULT_VALUES with categories
+DEFAULT_VALUES['included_categories'] = categories.copy()
+
+# Initialize session state
+initialize_session_state()
 
 base_costs = {
     "Officiant": [150, 600, 1500],
@@ -213,31 +305,32 @@ if st.session_state.current_step == 1:
     
     with col1:
         st.subheader("Event Details")
-        wedding_date = st.date_input(
+        st.session_state.wedding_date = st.date_input(
             "Wedding Date",
+            value=st.session_state.wedding_date,
             min_value=datetime.today(),
             help="Select your wedding date to account for seasonal pricing"
         )
         
-        guest_count = st.number_input(
+        st.session_state.guest_count = st.number_input(
             "Guest Count",
             min_value=1,
-            value=100,
+            value=st.session_state.guest_count,
             help="Enter the expected number of guests"
         )
 
     with col2:
         st.subheader("Wedding Party Details")
-        dresses = st.number_input(
+        st.session_state.dresses = st.number_input(
             "Wedding Party Dresses You're Paying For",
             min_value=0,
-            value=0,
+            value=st.session_state.dresses,
             help="Number of wedding party dresses you'll cover"
         )
-        suits = st.number_input(
+        st.session_state.suits = st.number_input(
             "Wedding Party Suits You're Paying For",
             min_value=0,
-            value=0,
+            value=st.session_state.suits,
             help="Number of wedding party suits you'll cover"
         )
 
@@ -245,42 +338,42 @@ if st.session_state.current_step == 1:
     col3, col4 = st.columns(2)
     
     with col3:
-        marrier_hair = st.number_input(
+        st.session_state.marrier_hair = st.number_input(
             "Marriers Getting Hair Done",
             min_value=0,
-            value=1,
+            value=st.session_state.marrier_hair,
             help="Number of marriers getting professional hair styling"
         )
-        marrier_makeup = st.number_input(
+        st.session_state.marrier_makeup = st.number_input(
             "Marriers Getting Makeup Done",
             min_value=0,
-            value=1,
+            value=st.session_state.marrier_makeup,
             help="Number of marriers getting professional makeup"
         )
 
     with col4:
-        wp_hair = st.number_input(
+        st.session_state.wp_hair = st.number_input(
             "Wedding Party Hair Services",
             min_value=0,
-            value=0,
+            value=st.session_state.wp_hair,
             help="Number of wedding party members getting hair done"
         )
-        wp_makeup = st.number_input(
+        st.session_state.wp_makeup = st.number_input(
             "Wedding Party Makeup Services",
             min_value=0,
-            value=0,
+            value=st.session_state.wp_makeup,
             help="Number of wedding party members getting makeup done"
         )
 
-    if wedding_date:
-        discount = get_seasonal_discount(wedding_date)
+    if st.session_state.wedding_date:
+        discount = get_seasonal_discount(st.session_state.wedding_date)
         if discount > 0:
             discount_message = []
-            if wedding_date.month in [11, 12, 1, 2, 3]:
+            if st.session_state.wedding_date.month in [11, 12, 1, 2, 3]:
                 discount_message.append("off-season (November-March)")
-            if wedding_date.weekday() == 6:
+            if st.session_state.wedding_date.weekday() == 6:
                 discount_message.append("Sunday")
-            elif wedding_date.weekday() < 5:
+            elif st.session_state.wedding_date.weekday() < 5:
                 discount_message.append("weekday")
             
             message = f"💰 Good news! You qualify for special pricing ({discount * 100:.0f}% off) for your "
@@ -312,16 +405,18 @@ elif st.session_state.current_step == 2:
     for icon_title, desc in goals.items():
         st.markdown(f"**{icon_title}** — {desc}")
 
-    top_3 = st.multiselect(
+    st.session_state.top_3 = st.multiselect(
         "Select Your Top 3 Priorities",
         list(goals.keys()),
+        default=st.session_state.top_3,
         max_selections=3,
         help="These will receive higher budget allocations"
     )
     
-    lowest = st.multiselect(
+    st.session_state.lowest = st.multiselect(
         "Optional: Select Areas to Minimize",
-        [g for g in goals if g not in top_3],
+        [g for g in goals if g not in st.session_state.top_3],
+        default=st.session_state.lowest,
         help="These will receive lower budget allocations"
     )
 
@@ -331,13 +426,13 @@ elif st.session_state.current_step == 2:
     )
     
     if use_custom:
-        included_categories = st.multiselect(
+        st.session_state.included_categories = st.multiselect(
             "Select Budget Categories to Include",
             categories,
-            default=categories
+            default=st.session_state.included_categories
         )
     else:
-        included_categories = categories
+        st.session_state.included_categories = categories
 
     col1, col2 = st.columns(2)
     with col1:
@@ -355,22 +450,25 @@ elif st.session_state.current_step == 3:
     
     with col1:
         st.subheader("Venue Details")
-        venue_type = st.selectbox(
+        st.session_state.venue_type = st.selectbox(
             "What kind of venue are you planning?",
             ["At Home Wedding", "Standard Venue", "Luxury Venue/Hotel"],
+            index=["At Home Wedding", "Standard Venue", "Luxury Venue/Hotel"].index(st.session_state.venue_type),
             help="Different venue types have different base costs and requirements"
         )
         
-        tent_needed = st.checkbox(
+        st.session_state.tent_needed = st.checkbox(
             "Will you need a tent?",
+            value=st.session_state.tent_needed,
             help="Tenting can significantly impact your budget"
         )
 
     with col2:
         st.subheader("Design Elements")
-        floral_level = st.selectbox(
+        st.session_state.floral_level = st.selectbox(
             "How lush are your floral plans?",
             ["Minimal", "Medium", "Lush"],
+            index=["Minimal", "Medium", "Lush"].index(st.session_state.floral_level),
             help="This affects both decor and personal florals budgets"
         )
 
@@ -387,8 +485,8 @@ elif st.session_state.current_step == 4:
     st.header("Your Wedding Budget Estimate")
     
     # Calculate budget tiers
-    scaling_factor = guest_count / 100
-    seasonal_discount = get_seasonal_discount(wedding_date)
+    scaling_factor = st.session_state.guest_count / 100
+    seasonal_discount = get_seasonal_discount(st.session_state.wedding_date)
     budget_tiers = {tier: {} for tier in ["Essential", "Enhanced", "Elevated"]}
     tier_totals = {}
     category_priorities = {}
@@ -418,9 +516,9 @@ elif st.session_state.current_step == 4:
 
     for cat in categories:
         goals_for_cat = category_to_goals.get(cat, [])
-        if any(g in top_3 for g in goals_for_cat):
+        if any(g in st.session_state.top_3 for g in goals_for_cat):
             category_priorities[cat] = "top"
-        elif any(g in lowest for g in goals_for_cat):
+        elif any(g in st.session_state.lowest for g in goals_for_cat):
             category_priorities[cat] = "bottom"
         else:
             category_priorities[cat] = "mid"
@@ -450,21 +548,21 @@ elif st.session_state.current_step == 4:
         goal_spend = {goal: 0 for goal in goals}
         
         for cat in categories:
-            if cat not in included_categories:
+            if cat not in st.session_state.included_categories:
                 budget_tiers[tier][cat] = 0
                 continue
 
             # Custom logic for special categories
             if cat == "Floral Design":
-                table_count = guest_count / 8
-                row_count = int(np.ceil(guest_count / 6))
+                table_count = st.session_state.guest_count / 8
+                row_count = int(np.ceil(st.session_state.guest_count / 6))
                 focal_point_count = {"Essential": 1, "Enhanced": 2, "Elevated": 3}[tier]
 
-                if floral_level == "Minimal":
+                if st.session_state.floral_level == "Minimal":
                     centrepiece_cost = [50, 150, 300]
                     aisle_marker_cost = [50, 100, 150]
                     focal_point_unit = 300
-                elif floral_level == "Medium":
+                elif st.session_state.floral_level == "Medium":
                     centrepiece_cost = [100, 350, 600]
                     aisle_marker_cost = [100, 250, 400]
                     focal_point_unit = 800
@@ -478,15 +576,15 @@ elif st.session_state.current_step == 4:
                 bst = table_count * centrepiece_cost[2] + row_count * aisle_marker_cost[2] + focal_point_count * focal_point_unit
 
             elif cat == "Venues (your event's backdrop & setting)":
-                if venue_type == "At Home Wedding":
+                if st.session_state.venue_type == "At Home Wedding":
                     g, b, bst = 0, 2000, 4000
-                elif venue_type == "Standard Venue":
+                elif st.session_state.venue_type == "Standard Venue":
                     g, b, bst = 5000, 8000, 12000
                 else:  # Luxury Venue/Hotel
                     g, b, bst = 9000, 14000, 20000
 
             elif cat == "Stationery":
-                g, b, bst = guest_count * 10, guest_count * 20, guest_count * 35
+                g, b, bst = st.session_state.guest_count * 10, st.session_state.guest_count * 20, st.session_state.guest_count * 35
 
             else:
                 g, b, bst = base_costs[cat]
@@ -500,8 +598,8 @@ elif st.session_state.current_step == 4:
                 value = max(value, category_minimums[cat])
 
             # Add tent cost if needed
-            if cat == "Decor & Rentals (Furniture, decor, tent, etc.)" and tent_needed:
-                sqft = guest_count * 12.5
+            if cat == "Decor & Rentals (Furniture, decor, tent, etc.)" and st.session_state.tent_needed:
+                sqft = st.session_state.guest_count * 12.5
                 if sqft <= 800:
                     base_tent_cost = 2500
                 elif sqft <= 1500:
@@ -518,11 +616,11 @@ elif st.session_state.current_step == 4:
 
             # Add beauty service costs
             if cat == "Hair & Makeup":
-                value += (marrier_hair + wp_hair + marrier_makeup + wp_makeup) * 200
+                value += (st.session_state.marrier_hair + st.session_state.wp_hair + st.session_state.marrier_makeup + st.session_state.wp_makeup) * 200
 
             # Add wedding party attire costs
             if cat == "Wedding Attire":
-                value += dresses * 250 + suits * 200
+                value += st.session_state.dresses * 250 + st.session_state.suits * 200
 
             # Apply seasonal discount if applicable
             if cat not in ["Food", "Beverage"]:  # Don't discount food and beverage
@@ -564,7 +662,7 @@ elif st.session_state.current_step == 4:
         for tier in ["Essential", "Enhanced", "Elevated"]:
             st.write(f"### {tier} Budget")
             st.write(f"Total: ${tier_totals[tier]:,}")
-            st.write(f"Per Guest: ${tier_totals[tier] // guest_count:,}/guest")
+            st.write(f"Per Guest: ${tier_totals[tier] // st.session_state.guest_count:,}/guest")
             
             # Create pie chart
             df = pd.DataFrame.from_dict(
@@ -613,7 +711,7 @@ elif st.session_state.current_step == 4:
             comparison_data.append({
                 'Tier': tier,
                 'Total Budget': tier_totals[tier],
-                'Per Guest': tier_totals[tier] / guest_count
+                'Per Guest': tier_totals[tier] / st.session_state.guest_count
             })
         
         comp_df = pd.DataFrame(comparison_data)
@@ -664,8 +762,8 @@ elif st.session_state.current_step == 4:
                 # Add first page with summary
                 pdf.add_page()
                 pdf.chapter_title("Wedding Budget Summary")
-                pdf.chapter_body(f"Date: {wedding_date.strftime('%B %d, %Y')}")
-                pdf.chapter_body(f"Guest Count: {guest_count}")
+                pdf.chapter_body(f"Date: {st.session_state.wedding_date.strftime('%B %d, %Y')}")
+                pdf.chapter_body(f"Guest Count: {st.session_state.guest_count}")
                 if seasonal_discount > 0:
                     pdf.chapter_body(f"Special Pricing Applied: {seasonal_discount * 100:.0f}% off")
                 
@@ -705,7 +803,7 @@ elif st.session_state.current_step == 4:
                 
                 # Add per guest calculation
                 pdf.cell(100, 10, 'Per Guest', 1)
-                pdf.cell(45, 10, format_currency(tier_totals[selected_tier] / guest_count), 1)
+                pdf.cell(45, 10, format_currency(tier_totals[selected_tier] / st.session_state.guest_count), 1)
                 pdf.cell(45, 10, '', 1)
                 
                 # Save PDF
