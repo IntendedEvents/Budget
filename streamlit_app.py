@@ -12,6 +12,20 @@ from io import BytesIO
 from fpdf import FPDF
 import calendar
 
+# Define goals dictionary
+goals = {
+    "🌿 A Beautiful Atmosphere": "Creating a visually stunning space with decor, florals, and lighting",
+    "💍 A Meaningful Ceremony": "Prioritizing the emotional heart of your day — your vows and the setting",
+    "🍽️ Incredible Food & Drink": "Ensuring guests are wowed by the meal, drinks, and overall experience",
+    "📸 Memories that Last Forever": "Capturing your day through photography and video",
+    "🛋️ A Comfortable, Seamless Experience": "Guests feel cared for and everything flows smoothly",
+    "🎶 A Great Party & Vibe": "Bringing the energy with music, dancing, and unforgettable moments",
+    "💄 Looking and Feeling Your Best": "Style, beauty, and confidence for you and your people",
+    "🧘 Stress-Free Planning": "Ongoing support and logistics that remove overwhelm",
+    "🎨 A Wedding That Feels and Flows Beautifully": "Design, flow, and cohesive aesthetic throughout the day",
+    "✨ A Unique and Personalized Experience": "Touches that tell your story, from signage to stationery"
+}
+
 # Initialize session state variables
 if 'current_step' not in st.session_state:
     st.session_state.current_step = 1
@@ -424,19 +438,6 @@ if st.session_state.current_step == 1:
 elif st.session_state.current_step == 2:
     st.header("Step 2: Select Your Experience Priorities")
     
-    goals = {
-        "🌿 A Beautiful Atmosphere": "Creating a visually stunning space with decor, florals, and lighting",
-        "💍 A Meaningful Ceremony": "Prioritizing the emotional heart of your day — your vows and the setting",
-        "🍽️ Incredible Food & Drink": "Ensuring guests are wowed by the meal, drinks, and overall experience",
-        "📸 Memories that Last Forever": "Capturing your day through photography and video",
-        "🛋️ A Comfortable, Seamless Experience": "Guests feel cared for and everything flows smoothly",
-        "🎶 A Great Party & Vibe": "Bringing the energy with music, dancing, and unforgettable moments",
-        "💄 Looking and Feeling Your Best": "Style, beauty, and confidence for you and your people",
-        "🧘 Stress-Free Planning": "Ongoing support and logistics that remove overwhelm",
-        "🎨 A Wedding That Feels and Flows Beautifully": "Design, flow, and cohesive aesthetic throughout the day",
-        "✨ A Unique and Personalized Experience": "Touches that tell your story, from signage to stationery"
-    }
-
     st.markdown("### Your Wedding Experience Goals")
     for icon_title, desc in goals.items():
         st.markdown(f"**{icon_title}** — {desc}")
