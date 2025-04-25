@@ -8,6 +8,62 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import json
 from pathlib import Path
+from io import BytesIO
+from fpdf import FPDF
+import calendar
+
+# --- Pricing Adjustments ---
+def get_seasonal_discount(date):
+    """Calculate seasonal discount based on month and day of week."""
+    month = date.month
+    day_of_week = date.weekday()  # Monday = 0, Sunday = 6
+    
+    base_discount = 0
+    
+    # Off-season discount (November through March)
+    if month in [11, 12, 1, 2, 3]:
+        base_discount += 0.10  # 10% off for off-season
+    
+    # Day of week discount
+    if day_of_week == 6:  # Sunday
+        base_discount += 0.10  # 10% off for Sunday
+    elif day_of_week < 5:  # Monday through Thursday
+        base_discount += 0.10  # 10% off for weekdays
+    
+    # Cap total discount at 20%
+    return min(base_discount, 0.20)
+
+def format_currency(amount):
+    """Format amount as currency string."""
+    return f"${amount:,.2f}"
+
+class WeddingBudgetPDF(FPDF):
+    def __init__(self):
+        super().__init__()
+        self.set_auto_page_break(auto=True, margin=15)
+        
+    def header(self):
+        # Add logo if exists
+        if os.path.exists("blk-MAIN.png"):
+            self.image("blk-MAIN.png", 10, 8, 33)
+        self.set_font('Arial', 'B', 20)
+        self.cell(0, 10, 'Wedding Budget Summary', 0, 1, 'C')
+        self.ln(10)
+        
+    def footer(self):
+        self.set_y(-15)
+        self.set_font('Arial', 'I', 8)
+        self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
+        
+    def chapter_title(self, title):
+        self.set_font('Arial', 'B', 16)
+        self.cell(0, 10, title, 0, 1, 'L')
+        self.ln(4)
+        
+    def chapter_body(self, body):
+        self.set_font('Arial', '', 12)
+        self.multi_cell(0, 10, body)
+        self.ln()
 
 # --- Initialize session state ---
 if 'current_step' not in st.session_state:
@@ -216,6 +272,22 @@ if st.session_state.current_step == 1:
             help="Number of wedding party members getting makeup done"
         )
 
+    if wedding_date:
+        discount = get_seasonal_discount(wedding_date)
+        if discount > 0:
+            discount_message = []
+            if wedding_date.month in [11, 12, 1, 2, 3]:
+                discount_message.append("off-season (November-March)")
+            if wedding_date.weekday() == 6:
+                discount_message.append("Sunday")
+            elif wedding_date.weekday() < 5:
+                discount_message.append("weekday")
+            
+            message = f"💰 Good news! You qualify for special pricing ({discount * 100:.0f}% off) for your "
+            message += " and ".join(discount_message)
+            message += " wedding!"
+            st.success(message)
+
     if st.button("Next: Experience Priorities ➡️"):
         st.session_state.current_step = 2
 
@@ -314,8 +386,160 @@ elif st.session_state.current_step == 3:
 elif st.session_state.current_step == 4:
     st.header("Your Wedding Budget Estimate")
     
-    # [Previous budget calculation logic here]
-    
+    # Calculate budget tiers
+    scaling_factor = guest_count / 100
+    seasonal_discount = get_seasonal_discount(wedding_date)
+    budget_tiers = {tier: {} for tier in ["Essential", "Enhanced", "Elevated"]}
+    tier_totals = {}
+    category_priorities = {}
+
+    # Determine category priorities based on goals
+    category_to_goals = {
+        "Officiant": ["💍 A Meaningful Ceremony"],
+        "Ceremony Decor, Rentals, and AV": ["🌿 A Beautiful Atmosphere", "💍 A Meaningful Ceremony"],
+        "Venues (your event's backdrop & setting)": ["🎨 A Wedding That Feels and Flows Beautifully"],
+        "Decor & Rentals (Furniture, decor, tent, etc.)": ["🌿 A Beautiful Atmosphere"],
+        "Floral Design": ["🌿 A Beautiful Atmosphere"],
+        "Music/Entertainment (DJ, Band, Photobooth, etc.)": ["🎶 A Great Party & Vibe"],
+        "Photography": ["📸 Memories that Last Forever"],
+        "Videography": ["📸 Memories that Last Forever"],
+        "Hair & Makeup": ["💄 Looking and Feeling Your Best"],
+        "Personal Florals (Bouquets, Boutonnieres, Crowns, etc.)": ["🌿 A Beautiful Atmosphere"],
+        "Wedding Attire": ["💄 Looking and Feeling Your Best"],
+        "Food": ["🍽️ Incredible Food & Drink"],
+        "Beverage": ["🍽️ Incredible Food & Drink"],
+        "Stationery": ["✨ A Unique and Personalized Experience"],
+        "Transportation": ["🛋️ A Comfortable, Seamless Experience"],
+        "Planning Support": ["🧘 Stress-Free Planning"],
+        "Event Management": ["🧘 Stress-Free Planning", "🛋️ A Comfortable, Seamless Experience"],
+        "Design Services": ["🎨 A Wedding That Feels and Flows Beautifully"],
+        "Other (Signage, Stationery, Gifts, Favours, etc.)": ["✨ A Unique and Personalized Experience"]
+    }
+
+    for cat in categories:
+        goals_for_cat = category_to_goals.get(cat, [])
+        if any(g in top_3 for g in goals_for_cat):
+            category_priorities[cat] = "top"
+        elif any(g in lowest for g in goals_for_cat):
+            category_priorities[cat] = "bottom"
+        else:
+            category_priorities[cat] = "mid"
+
+    # Priority weights for different tiers
+    priority_weights = {
+        "Essential": {
+            "top": [0.2, 0.5, 0.3],
+            "mid": [0.8, 0.2, 0.0],
+            "bottom": [1.0, 0.0, 0.0]
+        },
+        "Enhanced": {
+            "top": [0.0, 0.3, 0.7],
+            "mid": [0.3, 0.4, 0.3],
+            "bottom": [0.8, 0.2, 0.0]
+        },
+        "Elevated": {
+            "top": [0.0, 0.1, 0.9],
+            "mid": [0.2, 0.3, 0.5],
+            "bottom": [0.5, 0.4, 0.1]
+        }
+    }
+
+    # Calculate budgets for each tier
+    for tier in ["Essential", "Enhanced", "Elevated"]:
+        total = 0
+        goal_spend = {goal: 0 for goal in goals}
+        
+        for cat in categories:
+            if cat not in included_categories:
+                budget_tiers[tier][cat] = 0
+                continue
+
+            # Custom logic for special categories
+            if cat == "Floral Design":
+                table_count = guest_count / 8
+                row_count = int(np.ceil(guest_count / 6))
+                focal_point_count = {"Essential": 1, "Enhanced": 2, "Elevated": 3}[tier]
+
+                if floral_level == "Minimal":
+                    centrepiece_cost = [50, 150, 300]
+                    aisle_marker_cost = [50, 100, 150]
+                    focal_point_unit = 300
+                elif floral_level == "Medium":
+                    centrepiece_cost = [100, 350, 600]
+                    aisle_marker_cost = [100, 250, 400]
+                    focal_point_unit = 800
+                else:  # Lush
+                    centrepiece_cost = [200, 500, 800]
+                    aisle_marker_cost = [200, 500, 800]
+                    focal_point_unit = 1500
+
+                g = table_count * centrepiece_cost[0] + row_count * aisle_marker_cost[0] + focal_point_count * focal_point_unit
+                b = table_count * centrepiece_cost[1] + row_count * aisle_marker_cost[1] + focal_point_count * focal_point_unit
+                bst = table_count * centrepiece_cost[2] + row_count * aisle_marker_cost[2] + focal_point_count * focal_point_unit
+
+            elif cat == "Venues (your event's backdrop & setting)":
+                if venue_type == "At Home Wedding":
+                    g, b, bst = 0, 2000, 4000
+                elif venue_type == "Standard Venue":
+                    g, b, bst = 5000, 8000, 12000
+                else:  # Luxury Venue/Hotel
+                    g, b, bst = 9000, 14000, 20000
+
+            elif cat == "Stationery":
+                g, b, bst = guest_count * 10, guest_count * 20, guest_count * 35
+
+            else:
+                g, b, bst = base_costs[cat]
+
+            # Apply priority weights
+            w = priority_weights[tier][category_priorities[cat]]
+            value = (g * w[0] + b * w[1] + bst * w[2]) * scaling_factor
+
+            # Apply minimum values
+            if cat in category_minimums:
+                value = max(value, category_minimums[cat])
+
+            # Add tent cost if needed
+            if cat == "Decor & Rentals (Furniture, decor, tent, etc.)" and tent_needed:
+                sqft = guest_count * 12.5
+                if sqft <= 800:
+                    base_tent_cost = 2500
+                elif sqft <= 1500:
+                    base_tent_cost = 5000
+                elif sqft <= 2500:
+                    base_tent_cost = 6500
+                else:
+                    base_tent_cost = 8000
+
+                if category_priorities[cat] == "top":
+                    base_tent_cost += 3000
+
+                value += base_tent_cost
+
+            # Add beauty service costs
+            if cat == "Hair & Makeup":
+                value += (marrier_hair + wp_hair + marrier_makeup + wp_makeup) * 200
+
+            # Add wedding party attire costs
+            if cat == "Wedding Attire":
+                value += dresses * 250 + suits * 200
+
+            # Apply seasonal discount if applicable
+            if cat not in ["Food", "Beverage"]:  # Don't discount food and beverage
+                value = value * (1 - seasonal_discount)
+
+            # Store the calculated value
+            value = round(value)
+            budget_tiers[tier][cat] = value
+            total += value
+
+            # Add to goal spending
+            for goal in category_to_goals.get(cat, []):
+                goal_spend[goal] += value
+
+        tier_totals[tier] = total
+        budget_tiers[tier]["_goal_spend"] = goal_spend
+
     # Save scenario feature
     with st.expander("💾 Save This Budget Scenario", expanded=False):
         scenario_name = st.text_input("Scenario Name", "My Wedding Budget")
@@ -337,25 +561,163 @@ elif st.session_state.current_step == 4:
     
     with tab1:
         st.subheader("Budget Summary")
-        # [Summary content]
+        for tier in ["Essential", "Enhanced", "Elevated"]:
+            st.write(f"### {tier} Budget")
+            st.write(f"Total: ${tier_totals[tier]:,}")
+            st.write(f"Per Guest: ${tier_totals[tier] // guest_count:,}/guest")
+            
+            # Create pie chart
+            df = pd.DataFrame.from_dict(
+                {k: v for k, v in budget_tiers[tier].items() if k != "_goal_spend"},
+                orient='index',
+                columns=['Amount']
+            )
+            df = df[df['Amount'] > 0]
+            
+            chart = px.pie(
+                df,
+                values='Amount',
+                names=df.index,
+                title=f"{tier} Budget Breakdown",
+                color_discrete_sequence=px.colors.qualitative.Set3
+            )
+            st.plotly_chart(chart)
     
     with tab2:
         st.subheader("Detailed Cost Breakdown")
-        # [Detailed breakdown content]
+        selected_tier = st.selectbox(
+            "Select Budget Tier",
+            ["Essential", "Enhanced", "Elevated"]
+        )
+        
+        df = pd.DataFrame.from_dict(
+            {k: v for k, v in budget_tiers[selected_tier].items() if k != "_goal_spend"},
+            orient='index',
+            columns=['Amount']
+        )
+        df['Percentage'] = (df['Amount'] / tier_totals[selected_tier] * 100).round(1)
+        df = df.sort_values('Amount', ascending=False)
+        
+        st.dataframe(
+            df.style.format({
+                'Amount': '${:,.0f}',
+                'Percentage': '{:.1f}%'
+            })
+        )
     
     with tab3:
         st.subheader("Budget Visualizations")
-        # [Charts and graphs]
+        # Bar chart comparing tiers
+        comparison_data = []
+        for tier in ["Essential", "Enhanced", "Elevated"]:
+            comparison_data.append({
+                'Tier': tier,
+                'Total Budget': tier_totals[tier],
+                'Per Guest': tier_totals[tier] / guest_count
+            })
+        
+        comp_df = pd.DataFrame(comparison_data)
+        
+        fig = go.Figure(data=[
+            go.Bar(name='Total Budget', x=comp_df['Tier'], y=comp_df['Total Budget']),
+            go.Bar(name='Per Guest', x=comp_df['Tier'], y=comp_df['Per Guest'])
+        ])
+        
+        fig.update_layout(barmode='group', title='Budget Comparison by Tier')
+        st.plotly_chart(fig)
     
     with tab4:
         st.subheader("Export Options")
         col1, col2 = st.columns(2)
+        
+        selected_tier = st.selectbox(
+            "Select Tier to Export",
+            ["Essential", "Enhanced", "Elevated"],
+            key="export_tier"
+        )
+        
         with col1:
             if st.button("📥 Download as Excel"):
-                pass  # Excel export logic
+                df = pd.DataFrame.from_dict(
+                    {k: v for k, v in budget_tiers[selected_tier].items() if k != "_goal_spend"},
+                    orient='index',
+                    columns=['Amount']
+                )
+                df['Percentage'] = (df['Amount'] / tier_totals[selected_tier] * 100).round(1)
+                
+                # Create Excel file
+                output = BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    df.to_excel(writer, sheet_name='Budget Breakdown')
+                
+                st.download_button(
+                    label="Click to Download Excel",
+                    data=output.getvalue(),
+                    file_name=f"wedding_budget_{selected_tier.lower()}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+        
         with col2:
             if st.button("📄 Download as PDF"):
-                pass  # PDF export logic
+                pdf = WeddingBudgetPDF()
+                
+                # Add first page with summary
+                pdf.add_page()
+                pdf.chapter_title("Wedding Budget Summary")
+                pdf.chapter_body(f"Date: {wedding_date.strftime('%B %d, %Y')}")
+                pdf.chapter_body(f"Guest Count: {guest_count}")
+                if seasonal_discount > 0:
+                    pdf.chapter_body(f"Special Pricing Applied: {seasonal_discount * 100:.0f}% off")
+                
+                # Add budget breakdown
+                pdf.add_page()
+                pdf.chapter_title(f"{selected_tier} Budget Breakdown")
+                
+                df = pd.DataFrame.from_dict(
+                    {k: v for k, v in budget_tiers[selected_tier].items() if k != "_goal_spend"},
+                    orient='index',
+                    columns=['Amount']
+                )
+                df['Percentage'] = (df['Amount'] / tier_totals[selected_tier] * 100).round(1)
+                df = df.sort_values('Amount', ascending=False)
+                
+                # Add table headers
+                pdf.set_font('Arial', 'B', 12)
+                pdf.cell(100, 10, 'Category', 1)
+                pdf.cell(45, 10, 'Amount', 1)
+                pdf.cell(45, 10, 'Percentage', 1)
+                pdf.ln()
+                
+                # Add table rows
+                pdf.set_font('Arial', '', 12)
+                for idx, row in df.iterrows():
+                    pdf.cell(100, 10, str(idx), 1)
+                    pdf.cell(45, 10, format_currency(row['Amount']), 1)
+                    pdf.cell(45, 10, f"{row['Percentage']:.1f}%", 1)
+                    pdf.ln()
+                
+                # Add totals
+                pdf.set_font('Arial', 'B', 12)
+                pdf.cell(100, 10, 'Total', 1)
+                pdf.cell(45, 10, format_currency(tier_totals[selected_tier]), 1)
+                pdf.cell(45, 10, '100%', 1)
+                pdf.ln()
+                
+                # Add per guest calculation
+                pdf.cell(100, 10, 'Per Guest', 1)
+                pdf.cell(45, 10, format_currency(tier_totals[selected_tier] / guest_count), 1)
+                pdf.cell(45, 10, '', 1)
+                
+                # Save PDF
+                pdf_output = BytesIO()
+                pdf.output(pdf_output)
+                
+                st.download_button(
+                    label="Click to Download PDF",
+                    data=pdf_output.getvalue(),
+                    file_name=f"wedding_budget_{selected_tier.lower()}.pdf",
+                    mime="application/pdf"
+                )
 
     if st.button("⬅️ Back to Venue & Details"):
         st.session_state.current_step = 3
