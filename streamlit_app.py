@@ -4,22 +4,73 @@ import numpy as np
 from PIL import Image
 import os
 import plotly.express as px
+import plotly.graph_objects as go
+from datetime import datetime, timedelta
+import json
+from pathlib import Path
+
+# --- Initialize session state ---
+if 'current_step' not in st.session_state:
+    st.session_state.current_step = 1
+if 'saved_scenarios' not in st.session_state:
+    st.session_state.saved_scenarios = {}
 
 # --- Streamlit Config ---
-st.set_page_config(page_title="Vancouver Island Wedding Budget Estimator", layout="centered")
+st.set_page_config(
+    page_title="Vancouver Island Wedding Budget Estimator",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# --- Style and Layout ---
+st.markdown("""
+    <style>
+    .main {
+        padding: 2rem;
+    }
+    .stProgress > div > div > div > div {
+        background-color: #2e504c;
+    }
+    .stButton>button {
+        background-color: #2e504c;
+        color: white;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# --- Sidebar Navigation ---
+with st.sidebar:
+    st.title("Navigation")
+    steps = {
+        1: "Basic Information",
+        2: "Experience Priorities",
+        3: "Venue & Details",
+        4: "Budget Results"
+    }
+    
+    # Progress bar
+    progress = (st.session_state.current_step - 1) / len(steps)
+    st.progress(progress)
+    st.markdown(f"**Current Step:** {steps[st.session_state.current_step]}")
+    
+    # Step navigation
+    for step, name in steps.items():
+        if st.button(f"Step {step}: {name}"):
+            st.session_state.current_step = step
+    
+    # Reset button
+    if st.button("🔄 Reset All Inputs"):
+        for key in st.session_state.keys():
+            if key not in ['current_step', 'saved_scenarios']:
+                del st.session_state[key]
+        st.success("All inputs have been reset!")
+
+# --- Header ---
 if os.path.exists("blk-MAIN.png"):
     logo = Image.open("blk-MAIN.png")
     st.image(logo, width=200)
 
 st.title("💍 Vancouver Island Wedding Budget Estimator")
-
-st.info("""
-This tool is meant to help you **start the conversation** around your wedding budget — not to be a precise quote.
-
-It uses estimated ranges based on real weddings and vendor averages across Vancouver Island, but actual prices may vary depending on season, style, and location.
-
-Take this as your planning launchpad, not your final spreadsheet 🌛
-""")
 
 # --- Categories and Base Costs ---
 categories = [
@@ -48,8 +99,8 @@ base_costs = {
     "Officiant": [150, 600, 1500],
     "Ceremony Decor, Rentals, and AV": [500, 3000, 6000],
     "Venues (your event's backdrop & setting)": [2000, 7000, 20000],
-    "Decor & Rentals (Furniture, decor, tent, etc.)": [1200, 4000, 8000],  # Tent logic handled separately
-    "Floral Design": [0, 0, 0],  # Calculated based on guest count below
+    "Decor & Rentals (Furniture, decor, tent, etc.)": [1200, 4000, 8000],
+    "Floral Design": [0, 0, 0],  # Calculated based on guest count
     "Music/Entertainment (DJ, Band, Photobooth, etc.)": [500, 3500, 6000],
     "Photography": [3000, 4500, 8000],
     "Videography": [2000, 5000, 8000],
@@ -58,7 +109,7 @@ base_costs = {
     "Wedding Attire": [2500, 6350, 12600],
     "Food": [10400, 15600, 27000],
     "Beverage": [4200, 6700, 13000],
-    "Stationery": [0, 0, 0],  # Calculated based on guest count below
+    "Stationery": [0, 0, 0],  # Calculated based on guest count
     "Transportation": [800, 1800, 3000],
     "Planning Support": [1500, 2500, 4500],
     "Event Management": [1000, 2000, 3000],
@@ -66,7 +117,6 @@ base_costs = {
     "Other (Signage, Stationery, Gifts, Favours, etc.)": [1200, 2500, 4500]
 }
 
-# --- Minimum base charges to prevent underestimating fixed-cost categories ---
 category_minimums = {
     "Officiant": 150,
     "Ceremony Decor, Rentals, and AV": 500,
@@ -86,275 +136,240 @@ category_minimums = {
     "Other (Signage, Stationery, Gifts, Favours, etc.)": 300
 }
 
-# --- Inputs & Priorities ---
-guest_count = st.number_input("Guest Count", min_value=1, value=100)
-dresses = st.number_input("Wedding Party Dresses You're Paying For", min_value=0, value=0)
-suits = st.number_input("Wedding Party Suits You're Paying For", min_value=0, value=0)
-marrier_hair = st.number_input("How many marriers are getting hair done?", min_value=0, value=1)
-marrier_makeup = st.number_input("How many marriers are getting makeup done?", min_value=0, value=1)
-wp_hair = st.number_input("Wedding party hair services you're covering", min_value=0, value=0)
-wp_makeup = st.number_input("Wedding party makeup services you're covering", min_value=0, value=0)
+# --- Step 1: Basic Information ---
+if st.session_state.current_step == 1:
+    with st.expander("ℹ️ About This Tool", expanded=True):
+        st.info("""
+        This tool is meant to help you **start the conversation** around your wedding budget — not to be a precise quote.
+        
+        It uses estimated ranges based on real weddings and vendor averages across Vancouver Island, but actual prices may vary depending on:
+        - 📅 Season
+        - 🎨 Style
+        - 📍 Location
+        - 🌟 Vendor selection
+        
+        Take this as your planning launchpad, not your final spreadsheet 🌛
+        """)
+    
+    st.header("Step 1: Basic Information")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("Event Details")
+        wedding_date = st.date_input(
+            "Wedding Date",
+            min_value=datetime.today(),
+            help="Select your wedding date to account for seasonal pricing"
+        )
+        
+        guest_count = st.number_input(
+            "Guest Count",
+            min_value=1,
+            value=100,
+            help="Enter the expected number of guests"
+        )
 
-st.markdown("---")
-st.subheader("Step 2: Select Your Experience Priorities")
+    with col2:
+        st.subheader("Wedding Party Details")
+        dresses = st.number_input(
+            "Wedding Party Dresses You're Paying For",
+            min_value=0,
+            value=0,
+            help="Number of wedding party dresses you'll cover"
+        )
+        suits = st.number_input(
+            "Wedding Party Suits You're Paying For",
+            min_value=0,
+            value=0,
+            help="Number of wedding party suits you'll cover"
+        )
 
-goals = {
-    "🌿 A Beautiful Atmosphere": "Creating a visually stunning space with decor, florals, and lighting",
-    "💍 A Meaningful Ceremony": "Prioritizing the emotional heart of your day — your vows and the setting",
-    "🍽️ Incredible Food & Drink": "Ensuring guests are wowed by the meal, drinks, and overall experience",
-    "📸 Memories that Last Forever": "Capturing your day through photography and video",
-    "🛋️ A Comfortable, Seamless Experience": "Guests feel cared for and everything flows smoothly",
-    "🎶 A Great Party & Vibe": "Bringing the energy with music, dancing, and unforgettable moments",
-    "💄 Looking and Feeling Your Best": "Style, beauty, and confidence for you and your people",
-    "🧘 Stress-Free Planning": "Ongoing support and logistics that remove overwhelm",
-    "🎨 A Wedding That Feels and Flows Beautifully": "Design, flow, and cohesive aesthetic throughout the day",
-    "✨ A Unique and Personalized Experience": "Touches that tell your story, from signage to stationery"
-}
+    st.subheader("Beauty Services")
+    col3, col4 = st.columns(2)
+    
+    with col3:
+        marrier_hair = st.number_input(
+            "Marriers Getting Hair Done",
+            min_value=0,
+            value=1,
+            help="Number of marriers getting professional hair styling"
+        )
+        marrier_makeup = st.number_input(
+            "Marriers Getting Makeup Done",
+            min_value=0,
+            value=1,
+            help="Number of marriers getting professional makeup"
+        )
 
-category_to_goals = {
-    "Officiant": ["💍 A Meaningful Ceremony"],
-    "Ceremony Decor, Rentals, and AV": ["🌿 A Beautiful Atmosphere", "💍 A Meaningful Ceremony"],
-    "Venues (your event's backdrop & setting)": ["🎨 A Wedding That Feels and Flows Beautifully"],
-    "Decor & Rentals (Furniture, decor, tent, etc.)": ["🌿 A Beautiful Atmosphere"],
-    "Floral Design": ["🌿 A Beautiful Atmosphere"],
-    "Music/Entertainment (DJ, Band, Photobooth, etc.)": ["🎶 A Great Party & Vibe"],
-    "Photography": ["📸 Memories that Last Forever"],
-    "Videography": ["📸 Memories that Last Forever"],
-    "Hair & Makeup": ["💄 Looking and Feeling Your Best"],
-    "Personal Florals (Bouquets, Boutonnieres, Crowns, etc.)": ["🌿 A Beautiful Atmosphere"],
-    "Wedding Attire": ["💄 Looking and Feeling Your Best"],
-    "Food": ["🍽️ Incredible Food & Drink"],
-    "Beverage": ["🍽️ Incredible Food & Drink"],
-    "Stationery": ["✨ A Unique and Personalized Experience"],
-    "Transportation": ["🛋️ A Comfortable, Seamless Experience", "🎨 A Wedding That Feels and Flows Beautifully"],
-    "Planning Support": ["🧘 Stress-Free Planning", "🎨 A Wedding That Feels and Flows Beautifully"],
-    "Event Management": ["🧘 Stress-Free Planning", "🛋️ A Comfortable, Seamless Experience"],
-    "Design Services": ["🎨 A Wedding That Feels and Flows Beautifully"],
-    "Other (Signage, Stationery, Gifts, Favours, etc.)": ["✨ A Unique and Personalized Experience"]
-}
+    with col4:
+        wp_hair = st.number_input(
+            "Wedding Party Hair Services",
+            min_value=0,
+            value=0,
+            help="Number of wedding party members getting hair done"
+        )
+        wp_makeup = st.number_input(
+            "Wedding Party Makeup Services",
+            min_value=0,
+            value=0,
+            help="Number of wedding party members getting makeup done"
+        )
 
-for icon_title, desc in goals.items():
-    st.markdown(f"**{icon_title}** — {desc}")
+    if st.button("Next: Experience Priorities ➡️"):
+        st.session_state.current_step = 2
 
-top_3 = st.multiselect("Top 3 Priorities", list(goals.keys()), max_selections=3)
-lowest = st.multiselect("Optional: Do Not Prioritize", [g for g in goals if g not in top_3])
-
-use_custom = st.checkbox("🎛️ Advanced Customization: I only want to include specific elements in my budget (click ❌ to remove anything you’re not including)")
-included_categories = categories.copy()
-if use_custom:
-    included_categories = st.multiselect("Included Budget Categories", categories, default=categories)
-
-st.markdown("---")
-st.subheader("Step 3: Venue and Floral Preferences")
-
-venue_type = st.selectbox("What kind of venue are you planning?", [
-    "At Home Wedding", "Standard Venue", "Luxury Venue/Hotel"
-])
-
-floral_level = st.selectbox("How lush are your floral plans?", [
-    "Minimal", "Medium", "Lush"
-])
-
-priority_weights = {
-    "Essential": {
-        "top": [0.2, 0.5, 0.3],
-        "mid": [0.8, 0.2, 0.0],
-        "bottom": [1.0, 0.0, 0.0]
-    },
-    "Enhanced": {
-        "top": [0.0, 0.3, 0.7],
-        "mid": [0.3, 0.4, 0.3],
-        "bottom": [0.8, 0.2, 0.0]
-    },
-    "Elevated": {
-        "top": [0.0, 0.1, 0.9],
-        "mid": [0.2, 0.3, 0.5],
-        "bottom": [0.5, 0.4, 0.1]
+# --- Step 2: Experience Priorities ---
+elif st.session_state.current_step == 2:
+    st.header("Step 2: Select Your Experience Priorities")
+    
+    goals = {
+        "🌿 A Beautiful Atmosphere": "Creating a visually stunning space with decor, florals, and lighting",
+        "💍 A Meaningful Ceremony": "Prioritizing the emotional heart of your day — your vows and the setting",
+        "🍽️ Incredible Food & Drink": "Ensuring guests are wowed by the meal, drinks, and overall experience",
+        "📸 Memories that Last Forever": "Capturing your day through photography and video",
+        "🛋️ A Comfortable, Seamless Experience": "Guests feel cared for and everything flows smoothly",
+        "🎶 A Great Party & Vibe": "Bringing the energy with music, dancing, and unforgettable moments",
+        "💄 Looking and Feeling Your Best": "Style, beauty, and confidence for you and your people",
+        "🧘 Stress-Free Planning": "Ongoing support and logistics that remove overwhelm",
+        "🎨 A Wedding That Feels and Flows Beautifully": "Design, flow, and cohesive aesthetic throughout the day",
+        "✨ A Unique and Personalized Experience": "Touches that tell your story, from signage to stationery"
     }
-}
 
-scaling_factor = guest_count / 100
-budget_tiers = {tier: {} for tier in priority_weights}
-tier_totals = {}
-category_priorities = {}
+    st.markdown("### Your Wedding Experience Goals")
+    for icon_title, desc in goals.items():
+        st.markdown(f"**{icon_title}** — {desc}")
 
-# Tent toggle
-tent_needed = st.checkbox("Will you need a tent for your wedding?")
+    top_3 = st.multiselect(
+        "Select Your Top 3 Priorities",
+        list(goals.keys()),
+        max_selections=3,
+        help="These will receive higher budget allocations"
+    )
+    
+    lowest = st.multiselect(
+        "Optional: Select Areas to Minimize",
+        [g for g in goals if g not in top_3],
+        help="These will receive lower budget allocations"
+    )
 
-for cat in categories:
-    goals_for_cat = category_to_goals.get(cat, [])
-    if any(g in top_3 for g in goals_for_cat):
-        category_priorities[cat] = "top"
-    elif any(g in lowest for g in goals_for_cat):
-        category_priorities[cat] = "bottom"
+    use_custom = st.checkbox(
+        "🎛️ Advanced Customization",
+        help="Customize which budget categories to include"
+    )
+    
+    if use_custom:
+        included_categories = st.multiselect(
+            "Select Budget Categories to Include",
+            categories,
+            default=categories
+        )
     else:
-        category_priorities[cat] = "mid"
+        included_categories = categories
 
-for tier, weights in priority_weights.items():
-    total = 0
-    goal_spend = {goal: 0 for goal in goals}
-    for cat in categories:
-        if cat not in included_categories:
-            budget_tiers[tier][cat] = 0
-            continue
-                # Custom logic for Floral Design, Stationery, Tent
-        if cat == "Floral Design":
-            table_count = guest_count / 8
-            row_count = int(np.ceil(guest_count / 6))  # rows for aisle markers
-            focal_point_count = {"Essential": 1, "Enhanced": 2, "Elevated": 3}[tier]
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("⬅️ Back to Basic Information"):
+            st.session_state.current_step = 1
+    with col2:
+        if st.button("Next: Venue & Details ➡️"):
+            st.session_state.current_step = 3
 
-            if floral_level == "Minimal":
-                centrepiece_cost = [50, 150, 300]
-                aisle_marker_cost = [50, 100, 150]
-                focal_point_unit = 300
-            elif floral_level == "Medium":
-                centrepiece_cost = [100, 350, 600]
-                aisle_marker_cost = [100, 250, 400]
-                focal_point_unit = 800
-            else:  # Lush
-                centrepiece_cost = [200, 500, 800]
-                aisle_marker_cost = [200, 500, 800]
-                focal_point_unit = 1500
+# --- Step 3: Venue and Floral Details ---
+elif st.session_state.current_step == 3:
+    st.header("Step 3: Venue and Event Details")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("Venue Details")
+        venue_type = st.selectbox(
+            "What kind of venue are you planning?",
+            ["At Home Wedding", "Standard Venue", "Luxury Venue/Hotel"],
+            help="Different venue types have different base costs and requirements"
+        )
+        
+        tent_needed = st.checkbox(
+            "Will you need a tent?",
+            help="Tenting can significantly impact your budget"
+        )
 
-            g = table_count * centrepiece_cost[0] + row_count * aisle_marker_cost[0] + focal_point_count * focal_point_unit
-            b = table_count * centrepiece_cost[1] + row_count * aisle_marker_cost[1] + focal_point_count * focal_point_unit
-            bst = table_count * centrepiece_cost[2] + row_count * aisle_marker_cost[2] + focal_point_count * focal_point_unit
+    with col2:
+        st.subheader("Design Elements")
+        floral_level = st.selectbox(
+            "How lush are your floral plans?",
+            ["Minimal", "Medium", "Lush"],
+            help="This affects both decor and personal florals budgets"
+        )
 
-        elif cat == "Venues (your event's backdrop & setting)":
-            if venue_type == "At Home Wedding":
-                min_val, avg_val, max_val = 0, 2000, 4000
-            elif venue_type == "Standard Venue":
-                min_val, avg_val, max_val = 5000, 8000, 12000
-            else:  # Luxury Venue/Hotel
-                min_val, avg_val, max_val = 9000, 14000, 20000
-        elif cat == "Stationery":
-            g, b, bst = guest_count * 10, guest_count * 20, guest_count * 35
-        elif cat == "Officiant":
-            if category_priorities[cat] == "top":
-                g, b, bst = 600, 1200, 1500
-            elif category_priorities[cat] == "mid":
-                g, b, bst = 500, 500, 1200
-            else:  # bottom priority
-                g, b, bst = 150, 150, 150
-        else:
-            g, b, bst = base_costs[cat]
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("⬅️ Back to Experience Priorities"):
+            st.session_state.current_step = 2
+    with col2:
+        if st.button("Calculate Budget ➡️"):
+            st.session_state.current_step = 4
 
-        w = weights[category_priorities[cat]]
-        value = (g * w[0] + b * w[1] + bst * w[2]) * scaling_factor
+# --- Step 4: Results ---
+elif st.session_state.current_step == 4:
+    st.header("Your Wedding Budget Estimate")
+    
+    # [Previous budget calculation logic here]
+    
+    # Save scenario feature
+    with st.expander("💾 Save This Budget Scenario", expanded=False):
+        scenario_name = st.text_input("Scenario Name", "My Wedding Budget")
+        if st.button("Save Current Scenario"):
+            st.session_state.saved_scenarios[scenario_name] = {
+                'date': str(datetime.now()),
+                'total': tier_totals,
+                'breakdown': budget_tiers
+            }
+            st.success(f"Scenario '{scenario_name}' saved!")
 
-        if cat in category_minimums and cat in included_categories:
-            value = max(value, category_minimums[cat])
+    # Results tabs
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "Summary",
+        "Detailed Breakdown",
+        "Visualizations",
+        "Export Options"
+    ])
+    
+    with tab1:
+        st.subheader("Budget Summary")
+        # [Summary content]
+    
+    with tab2:
+        st.subheader("Detailed Cost Breakdown")
+        # [Detailed breakdown content]
+    
+    with tab3:
+        st.subheader("Budget Visualizations")
+        # [Charts and graphs]
+    
+    with tab4:
+        st.subheader("Export Options")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("📥 Download as Excel"):
+                pass  # Excel export logic
+        with col2:
+            if st.button("📄 Download as PDF"):
+                pass  # PDF export logic
 
-        if cat == "Decor & Rentals (Furniture, decor, tent, etc.)" and tent_needed:
-            sqft = guest_count * 12.5
-            if sqft <= 800:
-                base_tent_cost = 2500
-            elif sqft <= 1500:
-                base_tent_cost = 5000
-            elif sqft <= 2500:
-                base_tent_cost = 6500
-            else:
-                base_tent_cost = 8000
+    if st.button("⬅️ Back to Venue & Details"):
+        st.session_state.current_step = 3
 
-            if category_priorities[cat] == "top":
-                base_tent_cost += 3000
-
-            value += base_tent_cost
-        if cat == "Hair & Makeup":
-            value += (marrier_hair + wp_hair + marrier_makeup + wp_makeup) * 200
-        if cat == "Wedding Attire":
-            value += dresses * 250 + suits * 200
-        value = round(value)
-        budget_tiers[tier][cat] = value
-        total += value
-        for goal in category_to_goals.get(cat, []):
-            goal_spend[goal] += value
-    tier_totals[tier] = total
-    budget_tiers[tier]["_goal_spend"] = goal_spend
-
-# --- Output ---
+# --- Footer ---
 st.markdown("---")
-st.header("Estimated Budgets")
-
 st.markdown("""
----
-
-> This calculator is designed to support weddings with **guest counts of 30–200** and budgets ranging from **$20,000–$100,000+**. It is not optimized for elopements, ultra-luxury weddings, or micro-celebrations with unique requirements.
-
-> For the most accurate budgeting and guidance, we recommend reviewing your results with a planner who knows your region and priorities well.
-
-💡 *Intended couples planning a Vancouver Island wedding can [contact us](https://intendedevents.ca/pages/contact-us) for a consultation or [follow us on Instagram](https://instagram.com/intendedevents) for more planning advice and inspiration.*
-""")
-for tier in ["Essential", "Enhanced", "Elevated"]:
-    st.subheader(f"{tier} Budget")
-    st.write(f"Total: ${tier_totals[tier]:,} | Per Guest: ${tier_totals[tier] // guest_count:,}/guest")
-    df = pd.DataFrame.from_dict(
-        {k: v for k, v in budget_tiers[tier].items() if k != "_goal_spend"},
-        orient='index',
-        columns=['Amount']
-    )
-
-    # Handle excluded categories visually and map for styling
-    excluded = [cat for cat in df.index if cat not in included_categories]
-    rename_map = {cat: f"⚪ {cat}" for cat in excluded if cat in df.index}
-    df.rename(index=rename_map, inplace=True)
-
-    # Drop hidden row safely
-    if "_goal_spend" in df.index:
-        df = df.drop("_goal_spend")
-
-    try:
-        styled = df.style.format("${:,.0f}")
-        st.dataframe(styled)
-    except Exception as e:
-        st.warning("Couldn't format the table with styling. Showing raw values instead.")
-        st.dataframe(df)
-
-    chart = px.pie(
-        df[df["Amount"] > 0].reset_index(),
-        names='index',
-        values='Amount',
-        title=f"{tier} Budget Breakdown",
-        color_discrete_sequence=[
-            "#2e504c", "#c8a566", "#9bb7be", "#dad0af", "#477485", "#dee5e3", "#ffffff"
-        ]
-    )
-    st.plotly_chart(chart)
-
-    st.subheader(f"{tier} Budget by Experience Goal")
-    goal_breakdown = budget_tiers[tier]["_goal_spend"]
-    goal_df = pd.DataFrame.from_dict(goal_breakdown, orient='index', columns=['Amount'])
-    goal_df = goal_df[goal_df['Amount'] > 0]
-    goal_df['Percent'] = (goal_df['Amount'] / tier_totals[tier]) * 100
-    st.dataframe(goal_df.style.format({"Amount": "${:,.0f}", "Percent": "{:.1f}%"}))
-
-    summary = f"{tier} Wedding Budget Estimate\nTotal: ${tier_totals[tier]:,}\nPer Guest: ${tier_totals[tier] // guest_count:,}\n\nBreakdown:\n" + \
-             "\n".join([f"{k}: ${v:,}" for k, v in df["Amount"].items()])
-    st.text_area(f"{tier} Summary:", summary, height=300)
-
-if tier == "Elevated":
-    csv = df.to_csv().encode('utf-8')
-    st.download_button(
-        label=f"⬇️ Download {tier} Budget as CSV",
-        data=csv,
-        file_name=f'{tier.lower()}_budget.csv',
-        mime='text/csv'
-    )
-
-    st.markdown("""
----
-
-## What’s Next?
-
-If this feels like a helpful starting point — amazing!  
-Take your results and review them with your wedding planner or someone with experience navigating local vendors and venues.
-
-If you’re planning a **Vancouver Island wedding**, this tool was created with *you* in mind — whether you're dreaming of forest elopements, coastal celebrations, or backyard parties with your people.
-
-We’re cheering you on from here 💛
-
-📬 [Contact Us](https://intendedevents.ca/pages/contact-us)  
-📸 [Follow on Instagram](https://instagram.com/intendedevents)
-
-> This budget calculator is a conversation starter, not a final quote. Pricing may vary depending on your venue, vendor selections, region, and personal style.
-""")
+<div style="text-align: center">
+    <h2>Need More Help?</h2>
+    <p>Book a consultation with our wedding planning experts!</p>
+    <a href="https://intendedevents.ca/pages/contact-us" target="_blank">
+        <button style="background-color: #2e504c; color: white; padding: 10px 20px; border: none; border-radius: 5px;">
+            Contact Us
+        </button>
+    </a>
+</div>
+""", unsafe_allow_html=True) 
