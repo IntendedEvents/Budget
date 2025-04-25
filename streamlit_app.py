@@ -565,31 +565,26 @@ elif st.session_state.current_step == 4:
     # Calculate budget tiers
     scaling_factor = st.session_state.guest_count / 100
     seasonal_discount = get_seasonal_discount(st.session_state.wedding_date)
-    budget_tiers = {tier: {} for tier in ["Budget", "Essential", "Enhanced", "Elevated"]}
+    budget_tiers = {tier: {} for tier in ["Essentials Only", "Balanced", "Luxe"]}
     tier_totals = {}
     category_priorities = {}
 
     # Priority weights for different tiers
     priority_weights = {
-        "Budget": {
+        "Essentials Only": {  # Previously "Budget"
             "top": [0.8, 0.2, 0.0],  # Even top priorities stay mostly in minimum range
             "mid": [1.0, 0.0, 0.0],  # Mid priorities at minimum
             "bottom": [1.0, 0.0, 0.0]  # Bottom priorities at minimum
         },
-        "Essential": {
-            "top": [0.2, 0.5, 0.3],
-            "mid": [0.8, 0.2, 0.0],
-            "bottom": [1.0, 0.0, 0.0]
+        "Balanced": {  # Previously "Essential"
+            "top": [0.2, 0.6, 0.2],  # More emphasis on medium range
+            "mid": [0.7, 0.3, 0.0],  # Some medium range for mid priorities
+            "bottom": [1.0, 0.0, 0.0]  # Keep low priorities at minimum
         },
-        "Enhanced": {
-            "top": [0.0, 0.3, 0.7],
-            "mid": [0.3, 0.4, 0.3],
-            "bottom": [0.8, 0.2, 0.0]
-        },
-        "Elevated": {
-            "top": [0.0, 0.1, 0.9],
-            "mid": [0.2, 0.3, 0.5],
-            "bottom": [0.5, 0.4, 0.1]
+        "Luxe": {  # Combines best of Enhanced/Elevated
+            "top": [0.0, 0.2, 0.8],  # Heavy emphasis on high-end for priorities
+            "mid": [0.3, 0.4, 0.3],  # Balanced for mid-range items
+            "bottom": [0.7, 0.3, 0.0]  # Keep low priorities modest
         }
     }
 
@@ -626,7 +621,7 @@ elif st.session_state.current_step == 4:
             category_priorities[cat] = "mid"
 
     # Calculate budgets for each tier
-    for tier in ["Budget", "Essential", "Enhanced", "Elevated"]:
+    for tier in ["Essentials Only", "Balanced", "Luxe"]:
         total = 0
         goal_spend = {goal: 0 for goal in goals}
         
@@ -640,10 +635,9 @@ elif st.session_state.current_step == 4:
                 table_count = st.session_state.guest_count / 8
                 row_count = int(np.ceil(st.session_state.guest_count / 6))
                 focal_point_count = {
-                    "Budget": 1,
-                    "Essential": 1,
-                    "Enhanced": 2,
-                    "Elevated": 3
+                    "Essentials Only": 1,
+                    "Balanced": 2,
+                    "Luxe": 3
                 }[tier]
 
                 if st.session_state.floral_level == "Minimal":
@@ -822,7 +816,7 @@ elif st.session_state.current_step == 4:
                     """)
 
         # Display budget summary
-        for tier in ["Budget", "Essential", "Enhanced", "Elevated"]:
+        for tier in ["Essentials Only", "Balanced", "Luxe"]:
             st.write(f"### {tier} Budget")
             st.write(f"Total: ${tier_totals[tier]:,}")
             st.write(f"Per Guest: ${tier_totals[tier] // st.session_state.guest_count:,}/guest")
@@ -848,7 +842,7 @@ elif st.session_state.current_step == 4:
         st.subheader("Detailed Cost Breakdown")
         selected_tier = st.selectbox(
             "Select Budget Tier",
-            ["Budget", "Essential", "Enhanced", "Elevated"],
+            ["Essentials Only", "Balanced", "Luxe"],
             key="breakdown_tier_select"
         )
         
@@ -869,9 +863,10 @@ elif st.session_state.current_step == 4:
     
     with tab3:
         st.subheader("Budget Visualizations")
+        
         # Bar chart comparing tiers
         comparison_data = []
-        for tier in ["Essential", "Enhanced", "Elevated"]:
+        for tier in ["Essentials Only", "Balanced", "Luxe"]:
             comparison_data.append({
                 'Tier': tier,
                 'Total Budget': tier_totals[tier],
@@ -880,13 +875,27 @@ elif st.session_state.current_step == 4:
         
         comp_df = pd.DataFrame(comparison_data)
         
-        fig = go.Figure(data=[
-            go.Bar(name='Total Budget', x=comp_df['Tier'], y=comp_df['Total Budget']),
-            go.Bar(name='Per Guest', x=comp_df['Tier'], y=comp_df['Per Guest'])
-        ])
+        # Total budget comparison
+        fig1 = px.bar(
+            comp_df,
+            x='Tier',
+            y='Total Budget',
+            title='Total Budget by Tier',
+            color='Tier',
+            color_discrete_sequence=px.colors.qualitative.Set3
+        )
+        st.plotly_chart(fig1)
         
-        fig.update_layout(barmode='group', title='Budget Comparison by Tier')
-        st.plotly_chart(fig)
+        # Per guest comparison
+        fig2 = px.bar(
+            comp_df,
+            x='Tier',
+            y='Per Guest',
+            title='Cost Per Guest by Tier',
+            color='Tier',
+            color_discrete_sequence=px.colors.qualitative.Set3
+        )
+        st.plotly_chart(fig2)
     
     with tab4:
         st.subheader("Export Options")
@@ -894,7 +903,7 @@ elif st.session_state.current_step == 4:
         
         selected_tier = st.selectbox(
             "Select Tier to Export",
-            ["Budget", "Essential", "Enhanced", "Elevated"],
+            ["Essentials Only", "Balanced", "Luxe"],
             key="export_tier_select"
         )
         
