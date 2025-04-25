@@ -12,6 +12,42 @@ from io import BytesIO
 from fpdf import FPDF
 import calendar
 
+# Initialize session state variables
+if 'current_step' not in st.session_state:
+    st.session_state.current_step = 1
+if 'saved_scenarios' not in st.session_state:
+    st.session_state.saved_scenarios = {}
+if 'wedding_date' not in st.session_state:
+    st.session_state.wedding_date = datetime.today()
+if 'guest_count' not in st.session_state:
+    st.session_state.guest_count = 100
+if 'dresses' not in st.session_state:
+    st.session_state.dresses = 0
+if 'suits' not in st.session_state:
+    st.session_state.suits = 0
+if 'marrier_hair' not in st.session_state:
+    st.session_state.marrier_hair = 1
+if 'marrier_makeup' not in st.session_state:
+    st.session_state.marrier_makeup = 1
+if 'wp_hair' not in st.session_state:
+    st.session_state.wp_hair = 0
+if 'wp_makeup' not in st.session_state:
+    st.session_state.wp_makeup = 0
+if 'top_3' not in st.session_state:
+    st.session_state.top_3 = []
+if 'lowest' not in st.session_state:
+    st.session_state.lowest = []
+if 'included_categories' not in st.session_state:
+    st.session_state.included_categories = None
+if 'venue_type' not in st.session_state:
+    st.session_state.venue_type = "Standard Venue"
+if 'tent_needed' not in st.session_state:
+    st.session_state.tent_needed = False
+if 'floral_level' not in st.session_state:
+    st.session_state.floral_level = "Medium"
+if 'last_modified' not in st.session_state:
+    st.session_state.last_modified = datetime.now().isoformat()
+
 # --- State Management ---
 DEFAULT_VALUES = {
     'current_step': 1,
