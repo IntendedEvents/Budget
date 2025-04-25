@@ -213,7 +213,7 @@ with st.sidebar:
     st.subheader("💾 Scenario Management")
     
     # Save current scenario
-    scenario_name = st.text_input("Scenario Name", "My Wedding Budget")
+    scenario_name = st.text_input("Scenario Name", "My Wedding Budget", key="save_scenario_name")
     if st.button("Save Current Scenario"):
         current_state = save_current_state()
         st.session_state.saved_scenarios[scenario_name] = {
@@ -227,7 +227,8 @@ with st.sidebar:
         st.markdown("### Load Saved Scenario")
         scenario_to_load = st.selectbox(
             "Select a scenario to load",
-            options=list(st.session_state.saved_scenarios.keys())
+            options=list(st.session_state.saved_scenarios.keys()),
+            key="load_scenario_select"
         )
         if st.button("Load Selected Scenario"):
             saved_state = st.session_state.saved_scenarios[scenario_to_load]['state']
@@ -491,7 +492,8 @@ elif st.session_state.current_step == 3:
             "What kind of venue are you planning?",
             ["At Home Wedding", "Standard Venue", "Luxury Venue/Hotel"],
             index=["At Home Wedding", "Standard Venue", "Luxury Venue/Hotel"].index(st.session_state.venue_type),
-            help="Different venue types have different base costs and requirements"
+            help="Different venue types have different base costs and requirements",
+            key="venue_type_select"
         )
         
         st.session_state.tent_needed = st.checkbox(
@@ -506,7 +508,8 @@ elif st.session_state.current_step == 3:
             "How lush are your floral plans?",
             ["Minimal", "Medium", "Lush"],
             index=["Minimal", "Medium", "Lush"].index(st.session_state.floral_level),
-            help="This affects both decor and personal florals budgets"
+            help="This affects both decor and personal florals budgets",
+            key="floral_level_select"
         )
 
     col1, col2 = st.columns(2)
@@ -677,7 +680,7 @@ elif st.session_state.current_step == 4:
 
     # Save scenario feature
     with st.expander("💾 Save This Budget Scenario", expanded=False):
-        scenario_name = st.text_input("Scenario Name", "My Wedding Budget")
+        scenario_name = st.text_input("Scenario Name", "My Wedding Budget", key="save_scenario_name")
         if st.button("Save Current Scenario"):
             st.session_state.saved_scenarios[scenario_name] = {
                 'date': str(datetime.now()),
@@ -722,7 +725,8 @@ elif st.session_state.current_step == 4:
         st.subheader("Detailed Cost Breakdown")
         selected_tier = st.selectbox(
             "Select Budget Tier",
-            ["Essential", "Enhanced", "Elevated"]
+            ["Essential", "Enhanced", "Elevated"],
+            key="breakdown_tier_select"
         )
         
         df = pd.DataFrame.from_dict(
@@ -768,7 +772,7 @@ elif st.session_state.current_step == 4:
         selected_tier = st.selectbox(
             "Select Tier to Export",
             ["Essential", "Enhanced", "Elevated"],
-            key="export_tier"
+            key="export_tier_select"
         )
         
         with col1:
