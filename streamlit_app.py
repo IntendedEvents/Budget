@@ -61,6 +61,8 @@ if 'floral_level' not in st.session_state:
     st.session_state.floral_level = "Medium"
 if 'last_modified' not in st.session_state:
     st.session_state.last_modified = datetime.now().isoformat()
+if 'button_clicked' not in st.session_state:
+    st.session_state.button_clicked = False
 
 # --- State Management ---
 DEFAULT_VALUES = {
@@ -110,6 +112,26 @@ def load_state(saved_state):
         if key in DEFAULT_VALUES:
             st.session_state[key] = value
     st.session_state.last_modified = datetime.now().isoformat()
+
+def handle_save_scenario(location):
+    """Handle saving a scenario and prevent double-clicks"""
+    if not st.session_state.button_clicked:
+        st.session_state.button_clicked = True
+        scenario_name = st.session_state[f"{location}_scenario_name"]
+        if location == "sidebar":
+            current_state = save_current_state()
+            st.session_state.saved_scenarios[scenario_name] = {
+                'date': datetime.now().isoformat(),
+                'state': current_state
+            }
+        else:  # results
+            st.session_state.saved_scenarios[scenario_name] = {
+                'date': str(datetime.now()),
+                'total': tier_totals,
+                'breakdown': budget_tiers
+            }
+        st.success(f"Scenario '{scenario_name}' saved!")
+        st.session_state.button_clicked = False
 
 # --- Pricing Adjustments ---
 def get_seasonal_discount(date):
@@ -214,13 +236,8 @@ with st.sidebar:
     
     # Save current scenario in sidebar
     scenario_name = st.text_input("Scenario Name", "My Wedding Budget", key="sidebar_scenario_name")
-    if st.button("Save Current Scenario", key="sidebar_save_button"):
-        current_state = save_current_state()
-        st.session_state.saved_scenarios[scenario_name] = {
-            'date': datetime.now().isoformat(),
-            'state': current_state
-        }
-        st.success(f"Scenario '{scenario_name}' saved!")
+    if st.button("Save Current Scenario", key="sidebar_save_button", on_click=handle_save_scenario, args=("sidebar",)):
+        pass  # The actual saving is handled in the callback
     
     # Load saved scenario
     if st.session_state.saved_scenarios:
@@ -527,9 +544,33 @@ elif st.session_state.current_step == 4:
     # Calculate budget tiers
     scaling_factor = st.session_state.guest_count / 100
     seasonal_discount = get_seasonal_discount(st.session_state.wedding_date)
-    budget_tiers = {tier: {} for tier in ["Essential", "Enhanced", "Elevated"]}
+    budget_tiers = {tier: {} for tier in ["Budget", "Essential", "Enhanced", "Elevated"]}
     tier_totals = {}
     category_priorities = {}
+
+    # Priority weights for different tiers
+    priority_weights = {
+        "Budget": {
+            "top": [0.8, 0.2, 0.0],  # Even top priorities stay mostly in minimum range
+            "mid": [1.0, 0.0, 0.0],  # Mid priorities at minimum
+            "bottom": [1.0, 0.0, 0.0]  # Bottom priorities at minimum
+        },
+        "Essential": {
+            "top": [0.2, 0.5, 0.3],
+            "mid": [0.8, 0.2, 0.0],
+            "bottom": [1.0, 0.0, 0.0]
+        },
+        "Enhanced": {
+            "top": [0.0, 0.3, 0.7],
+            "mid": [0.3, 0.4, 0.3],
+            "bottom": [0.8, 0.2, 0.0]
+        },
+        "Elevated": {
+            "top": [0.0, 0.1, 0.9],
+            "mid": [0.2, 0.3, 0.5],
+            "bottom": [0.5, 0.4, 0.1]
+        }
+    }
 
     # Determine category priorities based on goals
     category_to_goals = {
@@ -563,27 +604,8 @@ elif st.session_state.current_step == 4:
         else:
             category_priorities[cat] = "mid"
 
-    # Priority weights for different tiers
-    priority_weights = {
-        "Essential": {
-            "top": [0.2, 0.5, 0.3],
-            "mid": [0.8, 0.2, 0.0],
-            "bottom": [1.0, 0.0, 0.0]
-        },
-        "Enhanced": {
-            "top": [0.0, 0.3, 0.7],
-            "mid": [0.3, 0.4, 0.3],
-            "bottom": [0.8, 0.2, 0.0]
-        },
-        "Elevated": {
-            "top": [0.0, 0.1, 0.9],
-            "mid": [0.2, 0.3, 0.5],
-            "bottom": [0.5, 0.4, 0.1]
-        }
-    }
-
     # Calculate budgets for each tier
-    for tier in ["Essential", "Enhanced", "Elevated"]:
+    for tier in ["Budget", "Essential", "Enhanced", "Elevated"]:
         total = 0
         goal_spend = {goal: 0 for goal in goals}
         
@@ -681,13 +703,8 @@ elif st.session_state.current_step == 4:
     # Save scenario feature in expander
     with st.expander("💾 Save This Budget Scenario", expanded=False):
         scenario_name = st.text_input("Scenario Name", "My Wedding Budget", key="results_scenario_name")
-        if st.button("Save Current Scenario", key="results_save_button"):
-            st.session_state.saved_scenarios[scenario_name] = {
-                'date': str(datetime.now()),
-                'total': tier_totals,
-                'breakdown': budget_tiers
-            }
-            st.success(f"Scenario '{scenario_name}' saved!")
+        if st.button("Save Current Scenario", key="results_save_button", on_click=handle_save_scenario, args=("results",)):
+            pass  # The actual saving is handled in the callback
 
     # Results tabs
     tab1, tab2, tab3, tab4 = st.tabs([
@@ -699,7 +716,87 @@ elif st.session_state.current_step == 4:
     
     with tab1:
         st.subheader("Budget Summary")
-        for tier in ["Essential", "Enhanced", "Elevated"]:
+        
+        # Add budget optimization tips
+        with st.expander("💡 Budget Optimization Tips", expanded=True):
+            st.markdown("### Tips to Optimize Your Budget")
+            
+            # General tips
+            st.markdown("""
+            **General Cost-Saving Strategies:**
+            - 📅 Consider an off-season or weekday wedding (can save up to 20%)
+            - 👥 Be strategic with guest count - each guest impacts multiple budget categories
+            - 🎯 Focus spending on your top priorities and minimize others
+            """)
+            
+            # Priority-specific tips
+            st.markdown("### Tips Based on Your Priorities")
+            for priority in st.session_state.top_3:
+                if priority == "🌿 A Beautiful Atmosphere":
+                    st.markdown("""
+                    - Choose a naturally beautiful venue to reduce decor needs
+                    - Focus on key focal points rather than decorating every space
+                    - Consider renting decor items instead of purchasing
+                    - Use seasonal flowers to reduce floral costs
+                    """)
+                elif priority == "💍 A Meaningful Ceremony":
+                    st.markdown("""
+                    - Invest in a great officiant but keep ceremony decor simple
+                    - Consider an outdoor ceremony in a beautiful natural setting
+                    - Focus on personal touches rather than elaborate decorations
+                    """)
+                elif priority == "🍽️ Incredible Food & Drink":
+                    st.markdown("""
+                    - Consider a lunch or brunch reception for lower food costs
+                    - Opt for passed appetizers over stationed hors d'oeuvres
+                    - Choose a venue that allows outside catering
+                    - Consider a limited bar rather than full open bar
+                    """)
+                elif priority == "📸 Memories that Last Forever":
+                    st.markdown("""
+                    - Book a great photographer but maybe skip videography
+                    - Consider a shorter coverage time with key moments prioritized
+                    - Ask about small wedding packages or off-season rates
+                    """)
+                elif priority == "🛋️ A Comfortable, Seamless Experience":
+                    st.markdown("""
+                    - Focus on essential rentals and skip purely decorative items
+                    - Consider all-inclusive venues to reduce coordination needs
+                    - Invest in day-of coordination but maybe skip full planning
+                    """)
+                elif priority == "🎶 A Great Party & Vibe":
+                    st.markdown("""
+                    - Choose a DJ over a band for lower entertainment costs
+                    - Create your own playlist for cocktail hour/dinner
+                    - Skip extra entertainment add-ons like photo booths
+                    """)
+                elif priority == "💄 Looking and Feeling Your Best":
+                    st.markdown("""
+                    - Consider having hair OR makeup done professionally, not both
+                    - Look for sample sales or pre-owned attire
+                    - Limit the number of wedding party members needing services
+                    """)
+                elif priority == "🧘 Stress-Free Planning":
+                    st.markdown("""
+                    - Consider a month-of coordinator instead of full planning
+                    - Use online planning tools and templates
+                    - Choose vendors who are easy to work with, even if slightly more expensive
+                    """)
+                elif priority == "🎨 A Wedding That Feels and Flows Beautifully":
+                    st.markdown("""
+                    - Focus on a strong color palette that ties everything together
+                    - Choose a venue that already matches your style
+                    - DIY simple design elements but outsource complex ones
+                    """)
+                elif priority == "✨ A Unique and Personalized Experience":
+                    st.markdown("""
+                    - Focus on a few impactful personal touches rather than many small ones
+                    - DIY personalized elements that don't require special skills
+                    - Digital invitations or simple printed ones with personal touches
+                    """)
+
+        # Display budget summary
+        for tier in ["Budget", "Essential", "Enhanced", "Elevated"]:
             st.write(f"### {tier} Budget")
             st.write(f"Total: ${tier_totals[tier]:,}")
             st.write(f"Per Guest: ${tier_totals[tier] // st.session_state.guest_count:,}/guest")
