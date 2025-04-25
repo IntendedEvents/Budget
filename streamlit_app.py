@@ -618,7 +618,12 @@ elif st.session_state.current_step == 4:
             if cat == "Floral Design":
                 table_count = st.session_state.guest_count / 8
                 row_count = int(np.ceil(st.session_state.guest_count / 6))
-                focal_point_count = {"Essential": 1, "Enhanced": 2, "Elevated": 3}[tier]
+                focal_point_count = {
+                    "Budget": 1,
+                    "Essential": 1,
+                    "Enhanced": 2,
+                    "Elevated": 3
+                }[tier]
 
                 if st.session_state.floral_level == "Minimal":
                     centrepiece_cost = [50, 150, 300]
@@ -822,7 +827,7 @@ elif st.session_state.current_step == 4:
         st.subheader("Detailed Cost Breakdown")
         selected_tier = st.selectbox(
             "Select Budget Tier",
-            ["Essential", "Enhanced", "Elevated"],
+            ["Budget", "Essential", "Enhanced", "Elevated"],
             key="breakdown_tier_select"
         )
         
@@ -868,7 +873,7 @@ elif st.session_state.current_step == 4:
         
         selected_tier = st.selectbox(
             "Select Tier to Export",
-            ["Essential", "Enhanced", "Elevated"],
+            ["Budget", "Essential", "Enhanced", "Elevated"],
             key="export_tier_select"
         )
         
