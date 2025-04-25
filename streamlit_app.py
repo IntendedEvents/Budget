@@ -247,12 +247,33 @@ with st.sidebar:
             options=list(st.session_state.saved_scenarios.keys()),
             key="load_scenario_select"
         )
-        if st.button("Load Selected Scenario"):
-            saved_state = st.session_state.saved_scenarios[scenario_to_load]['state']
-            load_state(saved_state)
+        if st.button("Load Selected Scenario", key="load_scenario_button"):
+            saved_data = st.session_state.saved_scenarios[scenario_to_load]
+            if 'state' in saved_data:  # Sidebar format
+                load_state(saved_data['state'])
+            else:  # Results format - need to convert to state format
+                state_data = {
+                    'wedding_date': st.session_state.wedding_date,
+                    'guest_count': st.session_state.guest_count,
+                    'dresses': st.session_state.dresses,
+                    'suits': st.session_state.suits,
+                    'marrier_hair': st.session_state.marrier_hair,
+                    'marrier_makeup': st.session_state.marrier_makeup,
+                    'wp_hair': st.session_state.wp_hair,
+                    'wp_makeup': st.session_state.wp_makeup,
+                    'top_3': st.session_state.top_3,
+                    'lowest': st.session_state.lowest,
+                    'included_categories': st.session_state.included_categories,
+                    'venue_type': st.session_state.venue_type,
+                    'tent_needed': st.session_state.tent_needed,
+                    'floral_level': st.session_state.floral_level,
+                    'last_modified': saved_data['date']
+                }
+                load_state(state_data)
             st.success(f"Loaded scenario: {scenario_to_load}")
+            st.rerun()  # Rerun to update all calculations with new state
         
-        if st.button("Delete Selected Scenario"):
+        if st.button("Delete Selected Scenario", key="delete_scenario_button"):
             del st.session_state.saved_scenarios[scenario_to_load]
             st.success(f"Deleted scenario: {scenario_to_load}")
     
