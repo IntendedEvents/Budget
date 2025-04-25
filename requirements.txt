@@ -1,5 +1,7 @@
-streamlit
-pandas
-numpy
-Pillow
-plotly
+streamlit>=1.32.0
+pandas>=2.2.0
+numpy>=1.26.0
+Pillow>=10.0.0
+plotly>=5.18.0
+openpyxl>=3.1.2  # For Excel export functionality
+fpdf2>=2.7.8  # For PDF export functionality 
