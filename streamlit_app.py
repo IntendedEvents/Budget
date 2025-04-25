@@ -212,9 +212,9 @@ with st.sidebar:
     # Scenario Management
     st.subheader("💾 Scenario Management")
     
-    # Save current scenario
-    scenario_name = st.text_input("Scenario Name", "My Wedding Budget", key="save_scenario_name")
-    if st.button("Save Current Scenario"):
+    # Save current scenario in sidebar
+    scenario_name = st.text_input("Scenario Name", "My Wedding Budget", key="sidebar_scenario_name")
+    if st.button("Save Current Scenario", key="sidebar_save_button"):
         current_state = save_current_state()
         st.session_state.saved_scenarios[scenario_name] = {
             'date': datetime.now().isoformat(),
@@ -678,10 +678,10 @@ elif st.session_state.current_step == 4:
         tier_totals[tier] = total
         budget_tiers[tier]["_goal_spend"] = goal_spend
 
-    # Save scenario feature
+    # Save scenario feature in expander
     with st.expander("💾 Save This Budget Scenario", expanded=False):
-        scenario_name = st.text_input("Scenario Name", "My Wedding Budget", key="save_scenario_name")
-        if st.button("Save Current Scenario"):
+        scenario_name = st.text_input("Scenario Name", "My Wedding Budget", key="results_scenario_name")
+        if st.button("Save Current Scenario", key="results_save_button"):
             st.session_state.saved_scenarios[scenario_name] = {
                 'date': str(datetime.now()),
                 'total': tier_totals,
