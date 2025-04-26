@@ -320,9 +320,7 @@ categories = [
     "Beverage",
     "Stationery",
     "Transportation",
-    "Planning Support",
-    "Event Management",
-    "Design Services",
+    "Planning & Event Management",
     "Other (Signage, Stationery, Gifts, Favours, etc.)"
 ]
 
@@ -348,9 +346,7 @@ base_costs = {
     "Beverage": [4200, 6700, 13000],
     "Stationery": [0, 0, 0],  # Calculated based on guest count
     "Transportation": [800, 1800, 3000],
-    "Planning Support": [1500, 2500, 4500],
-    "Event Management": [1000, 2000, 3000],
-    "Design Services": [1500, 3000, 6000],
+    "Planning & Event Management": [1200, 2900, 4500],
     "Other (Signage, Stationery, Gifts, Favours, etc.)": [1200, 2500, 4500]
 }
 
@@ -367,9 +363,7 @@ category_minimums = {
     "Beverage": 1000,
     "Stationery": 300,
     "Transportation": 300,
-    "Planning Support": 1500,
-    "Event Management": 1000,
-    "Design Services": 1000,
+    "Planning & Event Management": 1200,
     "Other (Signage, Stationery, Gifts, Favours, etc.)": 300
 }
 
@@ -603,9 +597,7 @@ elif st.session_state.current_step == 4:
         "Beverage": ["🍽️ Incredible Food & Drink"],
         "Stationery": ["✨ A Unique and Personalized Experience"],
         "Transportation": ["🛋️ A Comfortable, Seamless Experience"],
-        "Planning Support": ["🧘 Stress-Free Planning"],
-        "Event Management": ["🧘 Stress-Free Planning", "🛋️ A Comfortable, Seamless Experience"],
-        "Design Services": ["🎨 A Wedding That Feels and Flows Beautifully"],
+        "Planning & Event Management": ["🧘 Stress-Free Planning"],
         "Other (Signage, Stationery, Gifts, Favours, etc.)": ["✨ A Unique and Personalized Experience"]
     }
 
@@ -618,13 +610,13 @@ elif st.session_state.current_step == 4:
         else:
             category_priorities[cat] = "mid"
 
-    # Calculate budgets for each tier
+    # First pass to calculate initial totals without planning costs
     for tier in ["Essentials Only", "Balanced", "Luxe"]:
         total = 0
         goal_spend = {goal: 0 for goal in goals}
         
         for cat in categories:
-            if cat not in st.session_state.included_categories:
+            if cat not in st.session_state.included_categories or cat == "Planning & Event Management":
                 budget_tiers[tier][cat] = 0
                 continue
 
@@ -715,8 +707,31 @@ elif st.session_state.current_step == 4:
             for goal in category_to_goals.get(cat, []):
                 goal_spend[goal] += value
 
+        # Store initial total without planning
         tier_totals[tier] = total
-        budget_tiers[tier]["_goal_spend"] = goal_spend
+
+    # Second pass to add planning costs
+    for tier in ["Essentials Only", "Balanced", "Luxe"]:
+        if tier == "Essentials Only":
+            # Use base costs for Essentials Only tier
+            g, b, bst = base_costs["Planning & Event Management"]
+            w = priority_weights[tier][category_priorities.get("Planning & Event Management", "mid")]
+            value = (g * w[0] + b * w[1] + bst * w[2]) * scaling_factor
+            value = max(value, category_minimums["Planning & Event Management"])
+        elif tier == "Balanced":
+            # 10% of total budget
+            value = tier_totals[tier] * 0.10
+        else:  # Luxe
+            # 14% of total budget
+            value = tier_totals[tier] * 0.14
+
+        value = round(value)
+        budget_tiers[tier]["Planning & Event Management"] = value
+        tier_totals[tier] += value
+
+        # Update goal spending
+        for goal in category_to_goals.get("Planning & Event Management", []):
+            budget_tiers[tier]["_goal_spend"][goal] = budget_tiers[tier]["_goal_spend"].get(goal, 0) + value
 
     # Save scenario feature in expander
     with st.expander("💾 Save This Budget Scenario", expanded=False):
