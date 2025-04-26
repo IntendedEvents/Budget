@@ -12,6 +12,95 @@ from io import BytesIO
 from fpdf import FPDF
 import calendar
 
+# Category explanations and calculations
+category_explanations = {
+    "Officiant": {
+        "description": "The person who performs your ceremony",
+        "calculation": "Base cost varies by experience level and service type. Minimum covers basic legal ceremony, while higher tiers include personalized vows, multiple meetings, and rehearsal.",
+        "tips": "• Consider whether you want a religious or secular ceremony\n• Ask about rehearsal fees\n• Check if travel fees are included"
+    },
+    "Ceremony Decor, Rentals, and AV": {
+        "description": "Items needed specifically for your ceremony space",
+        "calculation": "Based on typical ceremony setups including chairs, arch/altar, aisle decor, and sound system. Scales with guest count for seating.",
+        "tips": "• Sound system is crucial for outdoor ceremonies\n• Consider ceremony-specific rentals vs. venue-provided items\n• Weather backup options may affect costs"
+    },
+    "Venues (your event's backdrop & setting)": {
+        "description": "The location(s) for your ceremony and reception",
+        "calculation": "Varies by venue type (At Home: minimal fees, Standard: moderate, Luxury: premium). Includes basic venue rental and standard amenities.",
+        "tips": "• Check what's included (tables, chairs, etc.)\n• Ask about overtime fees\n• Consider setup/teardown time in rental period"
+    },
+    "Decor & Rentals (Furniture, decor, tent, etc.)": {
+        "description": "All the items needed to create your event space",
+        "calculation": "Base cost scales with guest count and includes basic furniture needs. Tent costs (if needed) calculated separately based on guest count and style.",
+        "tips": "• Prioritize guest comfort items\n• Consider rental period length\n• Ask about delivery/pickup fees"
+    },
+    "Floral Design": {
+        "description": "Decorative flowers and greenery for your event spaces",
+        "calculation": "Based on three factors:\n1. Guest count (affects table centerpieces)\n2. Chosen style (Minimal, Medium, or Lush)\n3. Number of focal points/installations",
+        "tips": "• Choose seasonal flowers to optimize budget\n• Consider ceremony flowers that can move to reception\n• Prioritize high-impact areas"
+    },
+    "Music/Entertainment (DJ, Band, Photobooth, etc.)": {
+        "description": "The elements that create atmosphere and entertainment",
+        "calculation": "Base costs vary by entertainment type. DJ rates are lower, live bands higher. Additional hours and extras increase cost.",
+        "tips": "• Check if ceremony music is included\n• Ask about overtime rates\n• Consider equipment needs"
+    },
+    "Photography": {
+        "description": "Professional photo coverage of your day",
+        "calculation": "Based on coverage hours and deliverables. Higher tiers include engagement sessions, albums, and additional photographers.",
+        "tips": "• Confirm number of photographers included\n• Ask about delivery timeline\n• Check if travel fees apply"
+    },
+    "Videography": {
+        "description": "Professional video coverage of your day",
+        "calculation": "Similar to photography, varies by coverage hours and final product type (highlight film vs. full ceremony, etc.).",
+        "tips": "• Discuss audio recording needs\n• Ask about delivery format\n• Consider drone coverage if desired"
+    },
+    "Hair & Makeup": {
+        "description": "Professional beauty services for the wedding day",
+        "calculation": "Based on number of people receiving services:\n• Marriers getting hair/makeup\n• Wedding party members getting hair/makeup\nIncludes trials for marriers.",
+        "tips": "• Book trials well in advance\n• Consider touch-up kits\n• Ask about travel fees"
+    },
+    "Personal Florals (Bouquets, Boutonnieres, Crowns, etc.)": {
+        "description": "Flowers worn or carried by the wedding party",
+        "calculation": "Based on number of pieces needed and chosen style (Minimal, Medium, or Lush). Marrier bouquets are typically larger/more elaborate.",
+        "tips": "• Consider seasonal availability\n• Ask about preservation options\n• Remember flowers for special family members"
+    },
+    "Wedding Attire": {
+        "description": "Clothing and accessories for the wedding party",
+        "calculation": "Based on:\n• Number of dresses being purchased\n• Number of suits being purchased\nIncludes basic alterations.",
+        "tips": "• Start shopping early for alterations\n• Consider seasonal styles\n• Ask about group discounts"
+    },
+    "Food": {
+        "description": "All food service for your event",
+        "calculation": "Calculated per person, varies by service style and menu complexity. Includes staffing and basic service items.",
+        "tips": "• Consider dietary restrictions\n• Ask about vendor meals\n• Discuss service style options"
+    },
+    "Beverage": {
+        "description": "All beverage service for your event",
+        "calculation": "Per person cost based on service level (beer/wine vs. full bar) and duration. Includes basic mixers and service items.",
+        "tips": "• Consider consumption vs. flat rate\n• Ask about corkage fees\n• Remember non-alcoholic options"
+    },
+    "Stationery": {
+        "description": "All paper goods for your wedding",
+        "calculation": "Based on guest count and includes save the dates, invitations, day-of items (programs, menus, etc.).",
+        "tips": "• Order extra invitations\n• Consider digital options\n• Remember postage costs"
+    },
+    "Transportation": {
+        "description": "Guest shuttles and wedding party transportation",
+        "calculation": "Based on number of vehicles needed, duration, and distance. Scales with guest count for shuttles.",
+        "tips": "• Consider pickup/dropoff logistics\n• Ask about overtime rates\n• Remember gratuity"
+    },
+    "Planning & Event Management": {
+        "description": "Professional planning and coordination services",
+        "calculation": "Varies by service level:\n• Essentials Only: Basic coordination\n• Balanced: 10% of total budget\n• Luxe: 14% of total budget",
+        "tips": "• Review included meeting count\n• Ask about vendor referral policies\n• Discuss communication preferences"
+    },
+    "Other (Signage, Stationery, Gifts, Favours, etc.)": {
+        "description": "Miscellaneous items and special touches",
+        "calculation": "Base cost includes basic signage and cards. Scales with guest count for favors.",
+        "tips": "• Prioritize impactful items\n• Consider DIY options\n• Remember wedding party gifts"
+    }
+}
+
 # Define goals dictionary
 goals = {
     "🌿 A Beautiful Atmosphere": "Creating a visually stunning space with decor, florals, and lighting",
@@ -63,6 +152,8 @@ if 'last_modified' not in st.session_state:
     st.session_state.last_modified = datetime.now().isoformat()
 if 'button_clicked' not in st.session_state:
     st.session_state.button_clicked = False
+if 'is_processing' not in st.session_state:
+    st.session_state.is_processing = False
 
 # --- State Management ---
 DEFAULT_VALUES = {
@@ -82,7 +173,8 @@ DEFAULT_VALUES = {
     'venue_type': "Standard Venue",
     'tent_needed': False,
     'floral_level': "Medium",
-    'last_modified': datetime.now().isoformat()
+    'last_modified': datetime.now().isoformat(),
+    'is_processing': False
 }
 
 def initialize_session_state():
@@ -102,7 +194,7 @@ def save_current_state():
     current_state = {
         key: st.session_state[key] 
         for key in DEFAULT_VALUES.keys() 
-        if key not in ['current_step', 'saved_scenarios']
+        if key not in ['current_step', 'saved_scenarios', 'is_processing']
     }
     return current_state
 
@@ -115,8 +207,8 @@ def load_state(saved_state):
 
 def handle_save_scenario(location):
     """Handle saving a scenario and prevent double-clicks"""
-    if not st.session_state.button_clicked:
-        st.session_state.button_clicked = True
+    if not st.session_state.is_processing:
+        st.session_state.is_processing = True
         scenario_name = st.session_state[f"{location}_scenario_name"]
         if location == "sidebar":
             current_state = save_current_state()
@@ -131,7 +223,24 @@ def handle_save_scenario(location):
                 'breakdown': budget_tiers
             }
         st.success(f"Scenario '{scenario_name}' saved!")
-        st.session_state.button_clicked = False
+        st.session_state.is_processing = False
+
+def handle_step_change(step):
+    """Handle step navigation"""
+    if not st.session_state.is_processing:
+        st.session_state.is_processing = True
+        st.session_state.current_step = step
+        st.session_state.is_processing = False
+
+def handle_priorities_change():
+    """Handle priority selection changes"""
+    if 'top_3' in st.session_state:
+        st.session_state.last_modified = datetime.now().isoformat()
+
+def handle_categories_change():
+    """Handle included categories changes"""
+    if 'included_categories' in st.session_state:
+        st.session_state.last_modified = datetime.now().isoformat()
 
 # --- Pricing Adjustments ---
 def get_seasonal_discount(date):
@@ -227,7 +336,7 @@ with st.sidebar:
     # Step navigation
     for step, name in steps.items():
         if st.button(f"Step {step}: {name}"):
-            st.session_state.current_step = step
+            handle_step_change(step)
     
     st.markdown("---")
     
@@ -371,15 +480,29 @@ category_minimums = {
 if st.session_state.current_step == 1:
     with st.expander("ℹ️ About This Tool", expanded=True):
         st.info("""
-        This tool is meant to help you **start the conversation** around your wedding budget — not to be a precise quote.
+        This tool helps you create a realistic wedding budget based on your priorities and needs. Here's how it works:
+
+        1️⃣ **Basic Information** (Current Step)
+        - Enter your wedding date and guest count
+        - Specify wedding party details and beauty services
+        - See potential seasonal discounts
+
+        2️⃣ **Experience Priorities**
+        - Choose your top 3 priorities
+        - Identify areas where you can minimize spending
+        - Customize included categories if needed
+
+        3️⃣ **Venue & Details**
+        - Select your venue type
+        - Specify if you need a tent
+        - Choose your desired floral design level
+
+        4️⃣ **Budget Results**
+        - View three budget tiers: Essentials Only, Balanced, and Luxe
+        - See detailed breakdowns and visualizations
+        - Save and compare different scenarios
         
-        It uses estimated ranges based on real weddings and vendor averages across Vancouver Island, but actual prices may vary depending on:
-        - 📅 Season
-        - 🎨 Style
-        - 📍 Location
-        - 🌟 Vendor selection
-        
-        Take this as your planning launchpad, not your final spreadsheet 🌛
+        💡 **Tip**: Take your time with each step - your choices will affect the final budget calculations.
         """)
     
     st.header("Step 1: Basic Information")
@@ -462,11 +585,30 @@ if st.session_state.current_step == 1:
             message = f"💰 {discount * 100:.0f}% off has been applied based on potential {' and '.join(reasons)} savings"
             st.info(message)
 
-    if st.button("Next: Experience Priorities ➡️"):
-        st.session_state.current_step = 2
+    if st.button("Next: Experience Priorities ➡️", key="next_to_priorities", on_click=handle_step_change, args=(2,)):
+        pass
 
 # --- Step 2: Experience Priorities ---
 elif st.session_state.current_step == 2:
+    with st.expander("💡 Understanding Priorities", expanded=True):
+        st.info("""
+        Your priorities help us allocate your budget effectively:
+
+        **Top 3 Priorities**
+        - Will receive higher budget allocations
+        - Help ensure money goes to what matters most
+        - Guide vendor selection recommendations
+
+        **Areas to Minimize**
+        - Will receive lower budget allocations
+        - Help balance the overall budget
+        - Allow more spending in priority areas
+
+        **Advanced Customization**
+        - Optional: Remove categories you don't need
+        - Helps create a more personalized budget
+        - Affects overall budget distribution
+        """)
     st.header("Step 2: Select Your Experience Priorities")
     
     st.markdown("### Your Wedding Experience Goals")
@@ -478,40 +620,67 @@ elif st.session_state.current_step == 2:
         list(goals.keys()),
         default=st.session_state.top_3,
         max_selections=3,
-        help="These will receive higher budget allocations"
+        help="These will receive higher budget allocations",
+        key="priorities_select",
+        on_change=handle_priorities_change
     )
     
     st.session_state.lowest = st.multiselect(
         "Optional: Select Areas to Minimize",
         [g for g in goals if g not in st.session_state.top_3],
         default=st.session_state.lowest,
-        help="These will receive lower budget allocations"
+        help="These will receive lower budget allocations",
+        key="minimize_select",
+        on_change=handle_priorities_change
     )
 
     use_custom = st.checkbox(
         "🎛️ Advanced Customization",
-        help="Customize which budget categories to include"
+        help="Customize which budget categories to include",
+        key="use_custom"
     )
     
     if use_custom:
         st.session_state.included_categories = st.multiselect(
             "Select Budget Categories to Include",
             categories,
-            default=st.session_state.included_categories
+            default=st.session_state.included_categories,
+            key="categories_select",
+            on_change=handle_categories_change
         )
     else:
         st.session_state.included_categories = categories
 
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("⬅️ Back to Basic Information"):
-            st.session_state.current_step = 1
+        if st.button("⬅️ Back to Basic Information", key="back_to_basic", on_click=handle_step_change, args=(1,)):
+            pass
     with col2:
-        if st.button("Next: Venue & Details ➡️"):
-            st.session_state.current_step = 3
+        if st.button("Next: Venue & Details ➡️", key="next_to_venue", on_click=handle_step_change, args=(3,)):
+            pass
 
 # --- Step 3: Venue and Floral Details ---
 elif st.session_state.current_step == 3:
+    with st.expander("🏰 Venue & Design Impact", expanded=True):
+        st.info("""
+        These choices significantly impact your budget:
+
+        **Venue Type**
+        - At Home: Requires more rentals but lower venue fee
+        - Standard: Balanced amenities and rental needs
+        - Luxury: More included but higher base cost
+
+        **Tent Needs**
+        - Adds significant cost but provides weather security
+        - Size based on guest count
+        - Includes lighting and flooring costs
+
+        **Floral Design**
+        - Affects both decor and personal florals
+        - Minimal: Focus on key areas only
+        - Medium: Standard coverage and design
+        - Lush: Full design with statement pieces
+        """)
     st.header("Step 3: Venue and Event Details")
     
     col1, col2 = st.columns(2)
@@ -544,11 +713,11 @@ elif st.session_state.current_step == 3:
 
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("⬅️ Back to Experience Priorities"):
-            st.session_state.current_step = 2
+        if st.button("⬅️ Back to Experience Priorities", key="back_to_priorities", on_click=handle_step_change, args=(2,)):
+            pass
     with col2:
-        if st.button("Calculate Budget ➡️"):
-            st.session_state.current_step = 4
+        if st.button("Calculate Budget ➡️", key="next_to_results", on_click=handle_step_change, args=(4,)):
+            pass
 
 # --- Step 4: Results ---
 elif st.session_state.current_step == 4:
@@ -560,6 +729,10 @@ elif st.session_state.current_step == 4:
     budget_tiers = {tier: {} for tier in ["Essentials Only", "Balanced", "Luxe"]}
     tier_totals = {}
     category_priorities = {}
+
+    # Initialize goal_spend for each tier
+    for tier in ["Essentials Only", "Balanced", "Luxe"]:
+        budget_tiers[tier]["_goal_spend"] = {goal: 0 for goal in goals}
 
     # Priority weights for different tiers
     priority_weights = {
@@ -613,7 +786,6 @@ elif st.session_state.current_step == 4:
     # First pass to calculate initial totals without planning costs
     for tier in ["Essentials Only", "Balanced", "Luxe"]:
         total = 0
-        goal_spend = {goal: 0 for goal in goals}
         
         for cat in categories:
             if cat not in st.session_state.included_categories or cat == "Planning & Event Management":
@@ -662,7 +834,7 @@ elif st.session_state.current_step == 4:
                 g, b, bst = base_costs[cat]
 
             # Apply priority weights
-            w = priority_weights[tier][category_priorities[cat]]
+            w = priority_weights[tier][category_priorities.get(cat, "mid")]
             value = (g * w[0] + b * w[1] + bst * w[2]) * scaling_factor
 
             # Apply minimum values
@@ -703,9 +875,9 @@ elif st.session_state.current_step == 4:
             budget_tiers[tier][cat] = value
             total += value
 
-            # Add to goal spending
+            # Update goal spending for this category
             for goal in category_to_goals.get(cat, []):
-                goal_spend[goal] += value
+                budget_tiers[tier]["_goal_spend"][goal] += value
 
         # Store initial total without planning
         tier_totals[tier] = total
@@ -729,9 +901,9 @@ elif st.session_state.current_step == 4:
         budget_tiers[tier]["Planning & Event Management"] = value
         tier_totals[tier] += value
 
-        # Update goal spending
+        # Update goal spending for planning
         for goal in category_to_goals.get("Planning & Event Management", []):
-            budget_tiers[tier]["_goal_spend"][goal] = budget_tiers[tier]["_goal_spend"].get(goal, 0) + value
+            budget_tiers[tier]["_goal_spend"][goal] += value
 
     # Save scenario feature in expander
     with st.expander("💾 Save This Budget Scenario", expanded=False):
@@ -853,12 +1025,33 @@ elif st.session_state.current_step == 4:
     
     with tab2:
         st.subheader("Detailed Cost Breakdown")
+        
+        # Add explanation about budget tiers
+        with st.expander("💰 Understanding Budget Tiers", expanded=True):
+            st.info("""
+            **Essentials Only**
+            - Covers the basics needed for a beautiful wedding
+            - Focuses on necessities and key priorities
+            - Best for couples prioritizing value
+
+            **Balanced**
+            - Most popular choice
+            - Good mix of necessities and extras
+            - Allows for some customization and upgrades
+
+            **Luxe**
+            - Premium options and services
+            - Includes extras and upgrades
+            - Best for couples wanting the full experience
+            """)
+        
         selected_tier = st.selectbox(
             "Select Budget Tier",
             ["Essentials Only", "Balanced", "Luxe"],
             key="breakdown_tier_select"
         )
         
+        # Create DataFrame with explanations
         df = pd.DataFrame.from_dict(
             {k: v for k, v in budget_tiers[selected_tier].items() if k != "_goal_spend"},
             orient='index',
@@ -867,12 +1060,15 @@ elif st.session_state.current_step == 4:
         df['Percentage'] = (df['Amount'] / tier_totals[selected_tier] * 100).round(1)
         df = df.sort_values('Amount', ascending=False)
         
-        st.dataframe(
-            df.style.format({
-                'Amount': '${:,.0f}',
-                'Percentage': '{:.1f}%'
-            })
-        )
+        # Display the breakdown with explanations
+        for index, row in df.iterrows():
+            if index in category_explanations:
+                with st.expander(f"{index}: {format_currency(row['Amount'])} ({row['Percentage']}%)"):
+                    explanation = category_explanations[index]
+                    st.markdown(f"**What's Included:** {explanation['description']}")
+                    st.markdown(f"**How It's Calculated:** {explanation['calculation']}")
+                    st.markdown("**Tips:**")
+                    st.markdown(explanation['tips'])
     
     with tab3:
         st.subheader("Budget Visualizations")
@@ -1018,8 +1214,8 @@ elif st.session_state.current_step == 4:
                     mime="application/pdf"
                 )
 
-    if st.button("⬅️ Back to Venue & Details"):
-        st.session_state.current_step = 3
+    if st.button("⬅️ Back to Venue & Details", key="back_to_venue", on_click=handle_step_change, args=(3,)):
+        pass
 
 # --- Footer ---
 st.markdown("---")
